@@ -58,4 +58,28 @@ void MainWindow::disableGUI()
 void MainWindow::on_btn_localize_clicked()
 {
     //localize
+
 }
+
+cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
+{
+    cv::Mat biFiImg, greyIm, eightBIm, thresholdIm;
+
+    cv::bilateralFilter(inputImg, biFiImg, 9, 100, 1000, cv::BORDER_DEFAULT);
+
+    cv::cvtColor(biFiImg, greyIm, CV_BGR2GRAY);
+
+    greyIm.convertTo(eightBIm, CV_8UC1);
+
+    //cv::adaptiveThreshold(eightBIm,thresholdIm,255,CV_ADAPTIVE_THRESH_GAUSSIAN_C, CV_THRESH_BINARY,15,5);
+
+    //cv::threshold(eightBIm, thresholdIm, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+
+    cv::threshold(eightBIm, thresholdIm, 200, 255, CV_THRESH_BINARY);
+
+    return thresholdIm;
+}
+
+
+
+

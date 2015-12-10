@@ -28,6 +28,8 @@ private slots:
 
     void on_btn_localize_clicked();
 
+    cv::Mat lprThreshold(cv::Mat inputImg);
+
 private:
     Ui::MainWindow *ui;
     void enableGUI();
