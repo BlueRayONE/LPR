@@ -25,7 +25,6 @@ public:
 
 private slots:
     void on_btn_openImage_clicked();
-
     void on_btn_localize_clicked();
 
 private:
@@ -33,6 +32,8 @@ private:
     void enableGUI();
     void disableGUI();
     cv::Mat originalImage;
+    void writeIntoFile(int* array, int length, std::string filename);
+    void segmentationTest(cv::Mat& originalImage);
 };
 
 #endif // MAINWINDOW_H
