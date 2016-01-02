@@ -65,7 +65,7 @@ cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
 {
     cv::Mat biFiImg, greyIm, eightBIm, thresholdIm;
 
-    cv::bilateralFilter(inputImg, biFiImg, 9, 100, 1000, cv::BORDER_DEFAULT);
+    cv::bilateralFilter(inputImg, biFiImg, 18, 100, 1000, cv::BORDER_DEFAULT);
 
     cv::cvtColor(biFiImg, greyIm, CV_BGR2GRAY);
 
@@ -75,7 +75,7 @@ cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
 
     //cv::threshold(eightBIm, thresholdIm, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
 
-    cv::threshold(eightBIm, thresholdIm, 200, 255, CV_THRESH_BINARY);
+    cv::threshold(eightBIm, thresholdIm, 170, 255, CV_THRESH_BINARY);
 
     return thresholdIm;
 }
