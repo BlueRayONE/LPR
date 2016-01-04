@@ -23,8 +23,8 @@ private:
     cv::Mat computeBinaryImage();
     cv::Mat binaryImage;
 
-    int getHorizontalStart(int* horizontalHistogram);
-    int getHorizontalEnd(int* horizontalHistogram);
+    int getVerticalStart(int* horizontalHistogram);
+    int getVerticalEnd(int* horizontalHistogram);
 };
 
 #endif // SEGMENTATION_HPP

@@ -3,8 +3,7 @@
 
 using namespace cv;
 
-Segmentation::Segmentation(const Mat& image){
-    originalImage = image;
+Segmentation::Segmentation(const Mat& image): originalImage(image){
     binaryImage = computeBinaryImage();
 }
 
@@ -55,10 +54,10 @@ Mat Segmentation::computeBinaryImage(){
 }
 
 Mat Segmentation::cropHorizontal(){
-    // offset of the horizontal start and end
-    int start = getHorizontalStart(computeHorizontalHistogram());
-    std::cout << start << std::endl;
-    int end = 60;
+    int start = getVerticalStart(computeVerticalHistogram());
+    int end = getVerticalEnd(computeVerticalHistogram());
+    std::cout << end << std::endl;
+    //int end = 60;
 
     Mat croppedImage = originalImage(Rect(0,start, originalImage.cols, end-start));
     return croppedImage;
@@ -68,8 +67,7 @@ Mat Segmentation::cropVertical(){
 
 }
 
-int Segmentation::getHorizontalStart(int *horizontalHistogram){
-    // find local minimum at the beginning
+int Segmentation::getVerticalStart(int *horizontalHistogram){
     int startIndex = 0;
     int length = originalImage.rows;
     int threshold = 0.25*originalImage.cols;
@@ -80,20 +78,45 @@ int Segmentation::getHorizontalStart(int *horizontalHistogram){
         if(current < threshold){
             int candidate = i;
             // number of successor that have to be under the threshold
+            bool isStart = true;
             for(int j = candidate + 1; j < candidate + 5; j++){
-                if(horizontalHistogram[j] > threshold)
-                    break;
-                else {
-                    startIndex = candidate + 3;
-                    break;
+                if(horizontalHistogram[j] > threshold){
+                    isStart = false;
                 }
             }
-            break;
+            if(isStart){
+                startIndex = candidate + 1;
+                return startIndex;
+            }
+
         }
     }
     return startIndex;
 }
 
-int Segmentation::getHorizontalEnd(int *horizontalHistogram){
+int Segmentation::getVerticalEnd(int *horizontalHistogram){
+    int length = originalImage.rows;
+    int endIndex = length - 1;
+    int threshold = 0.25*originalImage.cols;
 
+    for(int i = length - 1; i >= 0; i--){
+        int current = horizontalHistogram[i];
+
+        if(current < threshold){
+            int candidate = i;
+            // number of successor that have to be under the threshold
+            bool isEnd = true;
+            for(int j = candidate - 1; j > candidate - 5; j--){
+                if(horizontalHistogram[j] > threshold){
+                    isEnd = false;
+                }
+            }
+            if(isEnd){
+                endIndex = candidate - 1;
+                return endIndex;
+            }
+
+        }
+    }
+    return endIndex;
 }
