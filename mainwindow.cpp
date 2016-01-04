@@ -50,19 +50,20 @@ void MainWindow::on_btn_openImage_clicked()
 
 }
 
-void MainWindow::segmentationTest(cv::Mat& originalImage){
-    Localisation localisation;
-    Segmentation segmentation;
-    int* horizontalHistogram = segmentation.computeHorizontalHistogram(originalImage);
-    int* verticalHistogram = segmentation.computeVerticalHistogram(originalImage);
+void MainWindow::segmentationTest(const cv::Mat& originalImage){
+    Segmentation segmentation(originalImage);
+    int* horizontalHistogram = segmentation.computeHorizontalHistogram();
+    int* verticalHistogram = segmentation.computeVerticalHistogram();
 
     //segmentation.cropHorizontal(originalImage);
 
     writeIntoFile(horizontalHistogram, originalImage.cols, "Horizontal.txt");
     writeIntoFile(verticalHistogram, originalImage.rows, "Vertical.txt");
 
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
+    system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
     //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
+
+    ImageViewer::viewImage(segmentation.cropHorizontal(), "Cropped Image");
 
     delete horizontalHistogram;
     delete verticalHistogram;

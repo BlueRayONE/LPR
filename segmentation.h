@@ -9,19 +9,22 @@
 class Segmentation
 {
 public:
-    Segmentation();
+    Segmentation(const cv::Mat& image);
     ~Segmentation();
 
-    int* computeHorizontalHistogram(cv::Mat& image);
-    int* computeVerticalHistogram(cv::Mat& image);
-    cv::Mat cropHorizontal(cv::Mat& image);
-    cv::Mat cropVertical(cv::Mat& image);
+    int* computeHorizontalHistogram();
+    int* computeVerticalHistogram();
+    cv::Mat cropHorizontal();
+    cv::Mat cropVertical();
+
+    cv::Mat originalImage;
 
 private:
-    cv::Mat computeBinaryImage(cv::Mat& image);
+    cv::Mat computeBinaryImage();
+    cv::Mat binaryImage;
 
-    int getHorizontalStart(int* horizontalHistogram, int length);
-    int getHorizontalEnd(int* horizontalHistogram, int length);
+    int getHorizontalStart(int* horizontalHistogram);
+    int getHorizontalEnd(int* horizontalHistogram);
 };
 
 #endif // SEGMENTATION_HPP

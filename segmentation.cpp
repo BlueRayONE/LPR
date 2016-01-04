@@ -3,19 +3,19 @@
 
 using namespace cv;
 
-Segmentation::Segmentation()
-{
+Segmentation::Segmentation(const Mat& image){
+    originalImage = image;
+    binaryImage = computeBinaryImage();
 }
 
 Segmentation::~Segmentation(){
 
 }
 
-int* Segmentation::computeHorizontalHistogram(Mat& image){
-    int width = image.cols;
-    int height = image.rows;
+int* Segmentation::computeHorizontalHistogram(){
+    int width = originalImage.cols;
+    int height = originalImage.rows;
 
-    Mat binaryImage = computeBinaryImage(image);
     int* histogram = new int[width];
     imshow("Binary Image", binaryImage);
     for(int i = 0; i < width; i++){
@@ -25,11 +25,10 @@ int* Segmentation::computeHorizontalHistogram(Mat& image){
     return histogram;
 }
 
-int* Segmentation::computeVerticalHistogram(Mat& image){
-    int width = image.cols;
-    int height = image.rows;
+int* Segmentation::computeVerticalHistogram(){
+    int width = originalImage.cols;
+    int height = originalImage.rows;
 
-    Mat binaryImage = computeBinaryImage(image);
     int* histogram = new int[height];
     imshow("Binary Image", binaryImage);
     for(int i = 0; i < height; i++){
@@ -39,11 +38,11 @@ int* Segmentation::computeVerticalHistogram(Mat& image){
     return histogram;
 }
 
-Mat Segmentation::computeBinaryImage(Mat& image){
+Mat Segmentation::computeBinaryImage(){
     Mat filteredImage, greyImage, image8bit, threshImage;
 
-    filteredImage = Mat(image.rows, image.cols, image.type());
-    bilateralFilter(image, filteredImage, 9, 100, 1000);
+    filteredImage = Mat(originalImage.rows, originalImage.cols, originalImage.type());
+    bilateralFilter(originalImage, filteredImage, 9, 100, 1000);
 
     cvtColor(filteredImage, greyImage, CV_BGR2GRAY);
     greyImage.convertTo(image8bit, CV_8UC1);
@@ -55,32 +54,46 @@ Mat Segmentation::computeBinaryImage(Mat& image){
     return threshImage;
 }
 
-Mat Segmentation::cropHorizontal(Mat& image){
+Mat Segmentation::cropHorizontal(){
     // offset of the horizontal start and end
-    getHorizontalStart(computeHorizontalHistogram(image), image.rows);
+    int start = getHorizontalStart(computeHorizontalHistogram());
+    std::cout << start << std::endl;
+    int end = 60;
+
+    Mat croppedImage = originalImage(Rect(0,start, originalImage.cols, end-start));
+    return croppedImage;
 }
 
-Mat Segmentation::cropVertical(Mat& image){
+Mat Segmentation::cropVertical(){
 
 }
 
-int Segmentation::getHorizontalStart(int *horizontalHistogram, int length){
+int Segmentation::getHorizontalStart(int *horizontalHistogram){
     // find local minimum at the beginning
     int startIndex = 0;
-    for(int i = 1; i < length; i++){
-        int current = horizontalHistogram[i];
-        int predecessor = horizontalHistogram[i-1];
+    int length = originalImage.rows;
+    int threshold = 0.25*originalImage.cols;
 
-        // !!! magic number !!! TODO
-        if((current < predecessor) && (current < 40)){
-            startIndex = current;
+    for(int i = 0; i < length; i++){
+        int current = horizontalHistogram[i];
+
+        if(current < threshold){
+            int candidate = i;
+            // number of successor that have to be under the threshold
+            for(int j = candidate + 1; j < candidate + 5; j++){
+                if(horizontalHistogram[j] > threshold)
+                    break;
+                else {
+                    startIndex = candidate + 3;
+                    break;
+                }
+            }
+            break;
         }
     }
-
-    std::cout << startIndex << std::endl;
     return startIndex;
 }
 
-int Segmentation::getHorizontalEnd(int *horizontalHistogram, int length){
+int Segmentation::getHorizontalEnd(int *horizontalHistogram){
 
 }
