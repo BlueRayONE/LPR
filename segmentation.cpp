@@ -81,6 +81,7 @@ int Segmentation::getVerticalStart(int *horizontalHistogram){
             // number of successor that have to be under the threshold
             bool isStart = true;
             for(int j = candidate - 1; j < candidate - 3; j++){
+
                 if(horizontalHistogram[j] > threshold){
                     isStart = false;
                 }
@@ -89,7 +90,6 @@ int Segmentation::getVerticalStart(int *horizontalHistogram){
                 startIndex = candidate - 3;
                 return startIndex;
             }
-
         }
     }
     return startIndex;
@@ -108,6 +108,7 @@ int Segmentation::getVerticalEnd(int *horizontalHistogram){
             int candidate = i;
             // number of successor that have to be under the threshold
             bool isEnd = true;
+
             for(int j = candidate + 1; j > candidate + 3; j++){
                 if(horizontalHistogram[j] > threshold){
                     isEnd = false;
