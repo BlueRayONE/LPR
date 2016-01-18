@@ -16,12 +16,14 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     ImageReader.cpp \
     QtOpencvCore.cpp \
-    ImageViewer.cpp
+    ImageViewer.cpp \
+    segmentation.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
     QtOpencvCore.hpp \
-    ImageViewer.h
+    ImageViewer.h   \
+    segmentation.h
 
 FORMS    += mainwindow.ui
 
