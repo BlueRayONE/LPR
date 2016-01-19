@@ -23,6 +23,8 @@ private:
     cv::Mat computeBinaryImage();
     cv::Mat binaryImage;
 
+    int findValley(int *horizontalHistogram, int size, int position);
+    int findPeak(int *horizontalHistogram, int size, int position);
     int getVerticalStart(int* horizontalHistogram);
     int getVerticalEnd(int* horizontalHistogram);
 };

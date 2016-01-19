@@ -11,6 +11,67 @@ Segmentation::~Segmentation(){
 
 }
 
+int Segmentation::findChars(int *horizontalHistogram, int size)
+{
+    Mat* chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
+    int leftPtr  = 0;
+    int rightPtr = 0;
+    int* badges = new int[2]; //Variable für Plaketten (Start und Ende)
+
+    rightPtr = findPeak(*horizontalHistogram, size, 0); //ersten Peak finden, um von da aus erstes
+                                                       //richtiges Valley zu finden
+    rightPtr =findValley(horizontalHistogram,size,rightPtr);
+    chars[0]= originalImage(Rect(0,0, rightPtr, #HEIGHT#));
+
+    //Plaketten-Suche hier.
+
+    for(int charNo=1;rightPtr<size,charNo<10;charNo++){
+        leftPtr = rightPtr;
+        rightPtr=findValley(horizontalHistogram,size,leftPtr+10);
+        if(!(leftPtr+5 > badges[0] && rightPtr-5 < badges[1])){ //Es handelt sich nicht um Bereich der Plaketten
+            chars[charNo]= originalImage(Rect(leftPtr,0, rightPtr-leftPtr, #HEIGHT#));
+        }
+    }
+}
+
+
+
+int Segmentation::findValley(int *horizontalHistogram, int size, int position)
+{
+    const int thresholdValley = 15; //threshold alue, which indicates beginning of a valley
+    int result = position;
+
+    for(int i=position; i < size; i++){
+        if(horizontalHistogram[i] <= thresholdValley){
+            while(horizontalHistogram[i+1] < horizontalHistogram[i] && i<size){
+                i++;
+            }
+            result = i;
+            break;
+        }
+    }
+
+    return result;
+}
+
+int Segmentation::findPeak(int *horizontalHistogram, int size, int position)
+{
+    const int thresholdPeak = 50; //threshold value, which indicates beginning of a Peak
+    int result = position;
+
+    for(int i=position; i < size; i++){
+        if(horizontalHistogram[i] >= thresholdPeak){
+            while(horizontalHistogram[i+1] > horizontalHistogram[i] && i<size){
+                i++;
+            }
+            result = i;
+            break;
+        }
+    }
+
+    return result;
+}
+
 int* Segmentation::computeHorizontalHistogram(){
     int width = originalImage.cols;
     int height = originalImage.rows;
