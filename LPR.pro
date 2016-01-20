@@ -16,12 +16,15 @@ SOURCES += main.cpp\
         mainwindow.cpp \
     ImageReader.cpp \
     QtOpencvCore.cpp \
-    ImageViewer.cpp
+    ImageViewer.cpp \
+    Wavelet.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
     QtOpencvCore.hpp \
-    ImageViewer.h
+    ImageViewer.h \
+    daub.h \
+    Wavelet.h
 
 FORMS    += mainwindow.ui
 

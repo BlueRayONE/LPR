@@ -16,7 +16,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btn_openImage_clicked()
 {
-    QString imagePath = QFileDialog::getOpenFileName(this, "Open Image...", QString(), QString("Images *.png *.jpg *.tiff *.tif"));
+	QString imagePath = QFileDialog::getOpenFileName(this, "Open Image...", QString(), QString("Images *.png *.jpg *.tiff *.tif"));
+	//QString imagePath = "D:/lars/Documents/gitProjects/LPR/img/A.jpg";
 
     if(!imagePath.isNull() && !imagePath.isEmpty())
     {
@@ -36,9 +37,10 @@ void MainWindow::on_btn_openImage_clicked()
            //ImageViewer::viewImage(img, "Original Image");
 
            //resizes img to height 800 maintaining aspect ratio
-           ImageViewer::viewImage(originalImage, "Original Image", 800);
+           ImageViewer::viewImage(originalImage, "Original Image", 300);
        }
     }
+
 
 }
 
@@ -58,4 +60,6 @@ void MainWindow::disableGUI()
 void MainWindow::on_btn_localize_clicked()
 {
     //localize
+	Wavelet* h = new Wavelet();
+	h->run(originalImage);
 }
