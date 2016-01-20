@@ -17,14 +17,16 @@ SOURCES += main.cpp\
     ImageReader.cpp \
     QtOpencvCore.cpp \
     ImageViewer.cpp \
-    Wavelet.cpp
+    Wavelet.cpp \
+    segmentation.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
     QtOpencvCore.hpp \
     ImageViewer.h \
     daub.h \
-    Wavelet.h
+    Wavelet.h \
+    segmentation.h
 
 FORMS    += mainwindow.ui
 
