@@ -1,7 +1,7 @@
 #ifndef SEGMENTATION_HPP
 #define SEGMENTATION_HPP
 
-#include "opencv2/core/core.hpp"
+/*#include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
@@ -27,6 +27,6 @@ private:
     int findPeak(int *horizontalHistogram, int size, int position);
     int getVerticalStart(int* horizontalHistogram);
     int getVerticalEnd(int* horizontalHistogram);
-};
+};*/
 
 #endif // SEGMENTATION_HPP

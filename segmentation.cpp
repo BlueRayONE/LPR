@@ -1,7 +1,7 @@
 ﻿#include "segmentation.h"
 #include <iostream>
 
-using namespace cv;
+/*using namespace cv;
 
 Segmentation::Segmentation(const Mat& image): originalImage(image){
     binaryImage = computeBinaryImage();
@@ -183,4 +183,4 @@ int Segmentation::getVerticalEnd(int *horizontalHistogram){
         }
     }
     return endIndex;
-}
+}*/

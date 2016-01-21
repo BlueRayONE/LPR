@@ -57,7 +57,6 @@ void Wavelet::run(cv::Mat img)
 	if(DEBUG_LEVEL >= 1) ImageViewer::viewImage(haarHL, "HL");
 
 	
-
 	//binarize HL
 	cv::Mat binarizedHL = binarize(haarHL);
 	//if(FULL_DEBUG) ImageViewer::viewImage(binarizedHL, "HL bin");
@@ -87,6 +86,7 @@ void Wavelet::run(cv::Mat img)
 	float max = maxIDVal.second;
 
 	double avg = std::accumulate(gauss, gauss + binarizedHL.rows, 0.0) / (double) (binarizedHL.rows);
+	avg = max;
 
 	std::vector<std::pair<int, int>> startRowsHeights =  this->findThresholdAreas(haarHL.rows, avg, gauss);
 
@@ -99,6 +99,8 @@ void Wavelet::run(cv::Mat img)
 #pragma region draw_above_threshold
 	cv::Mat colorHL2;
 	cvtColor(haarHL, colorHL2, CV_GRAY2RGB);
+	cv::Mat colorHL2_thres = colorHL2.clone();
+
 
 	for (int r = 0; r < haarHL.rows; r++)
 	{
@@ -109,11 +111,30 @@ void Wavelet::run(cv::Mat img)
 			{
 				cv::Vec3b inten;
 				inten.val[2] = 255;
-				colorHL2.at<cv::Vec3b>(r, c) = inten;
+				colorHL2_thres.at<cv::Vec3b>(r, c) = inten;
 			}
 		}
 	}
-	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(colorHL2, "draw thresholds");
+
+	for (int i = 0; i < startRowsHeights.size(); i++)
+	{
+		auto current = startRowsHeights[i];
+		for (int r = current.first; r <= current.first + current.second; r++)
+		{
+			for (int c = 0; c < colorHL2.cols; c++)
+			{
+				cv::Vec3b inten;
+				inten.val[1] = 255;
+				colorHL2.at<cv::Vec3b>(r, c) = inten;
+			}
+
+		}
+	}
+
+	if (DEBUG_LEVEL >= 2)
+		ImageViewer::viewImage(colorHL2, "draw thresholds adpative");
+	if (DEBUG_LEVEL >= 3)
+		ImageViewer::viewImage(colorHL2_thres, "draw thresholds");
 #pragma endregion
 /*************************************************************************************/
 	
@@ -136,7 +157,7 @@ void Wavelet::run(cv::Mat img)
 
 		for (int r = currentRect.tl().y; r < currentRect.br().y; r++)
 		{
-			for (int c = 0; c < colorHL.cols; c++)
+			for (int c = currentRect.tl().x; c < currentRect.br().x; c++)
 			{
 				cv::Vec3b inten;
 				inten.val[2] = 255;
@@ -145,17 +166,15 @@ void Wavelet::run(cv::Mat img)
 			}
 		}
 	}
-	if (DEBUG_LEVEL >= 1) ImageViewer::viewImage(colorHL, "draw rough rows");
+	if (DEBUG_LEVEL >= 1) ImageViewer::viewImage(colorHL, "draw rough");
 #pragma endregion
 /*************************************************************************************/
-
-
 	std::vector<std::pair<float, cv::Rect>> candidatesReal = findExactCandidate(grey, morphedHL, candidatesRough); //binarized
 
-	/*std::sort(candidatesReal.begin(), candidatesReal.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
+	std::sort(candidatesReal.begin(), candidatesReal.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
 	{
 		return left.first > right.first;
-	});*/
+	});
 
 
 
@@ -259,7 +278,7 @@ void Wavelet::run(cv::Mat img)
 
 	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(colorHL, "colorHL");
 	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(colorBinHL, "colorBinHL");
-	if (DEBUG_LEVEL >= 1) ImageViewer::viewImage(colorMorphHL, "colorMorphHL");
+	//if (DEBUG_LEVEL >= 1) ImageViewer::viewImage(colorMorphHL, "colorMorphHL");
 	if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(img, "orig width candidates");
 	if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(test, "candidate");
 
@@ -276,7 +295,7 @@ float* Wavelet::gaussFilter(int* arr, int n)
 	res[0] = 0; res[1] = 0; res[2] = 0; res[3] = 0;
 	res[n-1] = 0; res[n-2] = 0; res[n-3] = 0; res[n-4] = 0;
 	float sigma = 0.05f;
-	int w = 4;
+	int w = 2;
 
 	auto h = [sigma](int j) { return exp(-((j*sigma)*(j*sigma))/2); };
 
@@ -534,11 +553,69 @@ float Wavelet::rectRank(cv::Mat img, cv::Rect rect)
 
 }
 
-std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg, float* rowSums)
+std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg, float* rowSums, bool splitAreas)
+{
+	std::vector<std::pair<int, int>> startRowsHeights;
+
+	const int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * n);
+	float currentWeight = AVG_WEIGHT;
+
+	int currentHeight = 0;
+	int currentRectStart = 0;
+	bool wasInThresh = false;
+	bool isInThresh = false;
+
+
+	for (int r = 0; r < n; r++)
+	{
+		if (rowSums[r] >= currentWeight*avg)
+			isInThresh = true;
+		
+
+		if (isInThresh)
+		{
+			if (!wasInThresh)
+				currentRectStart = r;
+			currentHeight++;
+
+			if (r == n - 1)
+				isInThresh = false;
+		}
+			
+		else if (wasInThresh && !isInThresh)
+		{
+			if (currentHeight > maxRectHeight && splitAreas)
+			{
+				r = currentRectStart - 1; //revert rectangle and refine threshold
+				currentWeight += WEIGHT_STEP_SIZE;
+				isInThresh = false;
+				wasInThresh = false;
+				currentHeight = 0;
+				continue;
+			}
+
+			if (currentHeight > MIN_RECT_HEIGHT_RATIO * n || !splitAreas)
+			{
+				startRowsHeights.push_back(std::make_pair(r - currentHeight, currentHeight));
+			}
+			currentWeight = AVG_WEIGHT; //reset currentWeight for next retangles;
+			currentHeight = 0;
+		}
+
+		wasInThresh = isInThresh;
+		isInThresh = false;
+	}
+
+	return startRowsHeights;
+}
+
+
+/*std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg, float* rowSums)
 {
 	int currentHeight = 0;
 	bool wasInThresh = false;
 	bool isInThresh = false;
+	int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * n);
 
 	std::vector<std::pair<int, int>> startRowsHeights;
 
@@ -546,7 +623,7 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 	{
 		if (rowSums[r] >= AVG_WEIGHT*avg)
 			isInThresh = true;
-		
+
 		if (isInThresh)
 		{
 			currentHeight++;
@@ -560,7 +637,7 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 
 			}
 		}
-			
+
 		else if (wasInThresh && !isInThresh)
 		{
 			if (currentHeight > MIN_RECT_HEIGHT_RATIO * n)
@@ -576,63 +653,42 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 	}
 
 	return startRowsHeights;
-}
+}*/
 
 std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img, std::vector<std::pair<int, int>> startRowsHeights)
 {
-	cv::Mat debug = img.clone();
 	//breite: 520 hoehe: 110
+	cv::Mat debug, debug2;
+	debug2 = img.clone();
 	std::vector<std::pair<float, cv::Rect>> candidates;
 	int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * img.rows);
 
-	while (candidates.size() < 3) //relax conditions until at least 3 candidates are found!
+	for (int i = 0; i < startRowsHeights.size(); i++) //number of candidates
 	{
+		debug = img.clone();
+		cv::Rect debugRect = cv::Rect(0, startRowsHeights[i].first, img.rows, startRowsHeights[i].second);
+		debug = debug(debugRect);
+		int startRow = startRowsHeights[i].first;
+		int height = startRowsHeights[i].second;
+		int width = height * 5;
 
-		for (int i = 0; i < startRowsHeights.size(); i++) //number of candidates
+
+		for (int c = 0; c < img.cols - width; c++)
 		{
-			int startRow = startRowsHeights[i].first;
-			int realHeight = startRowsHeights[i].second;
-			if (realHeight > maxRectHeight && DISCARD_EXCEEDED_RECT) continue;
-			int height = (realHeight >maxRectHeight) ? maxRectHeight : realHeight;
-			int width = height * 5;
+			cv::Rect current = cv::Rect(c, startRow, width, height);
+			cv::Point center = cv::Point(c + width / 2, startRow + height / 2);
+			cv::rectangle(debug2, current, cv::Scalar(255, 0, 0));
+			if (img.at<uchar>(center) == 0 && img.at<uchar>(cv::Point(center.x, center.y + 1)) == 0 && img.at<uchar>(cv::Point(center.x, center.y - 1)) == 0)
+				continue;
 
-			int upperRow = startRow + 1;
-
-			if (realHeight > maxRectHeight)
-			{
-				upperRow = realHeight - maxRectHeight + startRow + 1;
-			}
-
-			for (int r = startRow; r < upperRow; r++)
-			{
-				for (int c = 0; c < img.cols - width; c++)
-				{
-					cv::Rect current = cv::Rect(c, r, width, height);
-					cv::Point center = cv::Point(c + width / 2, r + height / 2);
-					cv::rectangle(debug, current, cv::Scalar(255, 0, 0));
-					if (img.at<uchar>(center) == 0 && img.at<uchar>(cv::Point(center.x, center.y + 1)) == 0 && img.at<uchar>(cv::Point(center.x, center.y - 1)) == 0)
-						continue;
-
-					/*float rectWeight = 0.0;
-					for (int l = r; l < r + height; l++)
-					{
-					for (int k = c; k < c + width; k++)
-					{
-					rectWeight += img.at<uchar>(l, k);
-					}
-					}
-					rectWeight /= current.area();*/
-
-					//candidates.push_back(std::make_pair(rectWeight, current));
-					candidates.push_back(std::make_pair(this->rectRank(img, current), current));
-				}
-
-			}
+			
+			float rank = this->rectRank(img, current);
+			if (evalRect(current, rank, img))
+				candidates.push_back(std::make_pair(rank, current));
 		}
-
-		this->MAX_RECT_HEIGHT_RATIO += 10.0f / 1000;
-		maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * img.rows);
 	}
+
+	maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * img.rows);
 
 	//sort by highest weight (heightest weight first)
 	std::sort(candidates.begin(), candidates.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
@@ -752,7 +808,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(candidateHL.rows * GAP_TO_HEIGHT_RATIO, candidateHL.rows));
 		cv::morphologyEx(candidateHL, candidateHL, 3, element); //3 == closing
 
-		element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 1)); //dilate 7x1 to compensate cut offs
+		element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(7, 1)); //dilate 9x1 to compensate cut offs
 		cv::dilate(candidateHL, candidateHL, element);
 
 
@@ -760,17 +816,42 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		float* gaussColsSums = this->gaussFilter(colsSums, candidateHL.cols);
 		this->print<float>(gaussColsSums, candidateHL.cols);
 
-		/*std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums, candidateHL.cols);
+		std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums, candidateHL.cols);
 		std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gaussColsSums);
 		int maxID = maxIDVal.first;
-		float max = maxIDVal.second;*/
+		float max = maxIDVal.second;
 
 
 		double avg = std::accumulate(gaussColsSums, gaussColsSums + candidateHL.cols, 0.0) / (double) (candidateHL.cols);
+		avg = 1.0*avg;
+		//avg = 0.5*max;
 
-		std::vector<std::pair<int, int>> startColsWidths = this->findThresholdAreas(candidateHL.cols, avg, gaussColsSums);
+		int pos_left = 0;
+		int pos_right = candidateHL.cols - 1;
 
-		auto maxIt = std::max_element(startColsWidths.begin(), startColsWidths.end(),
+		for (int i = 0; i < candidateHL.cols; i++)
+		{
+
+			if (gaussColsSums[i] > avg)
+			{
+				pos_left = i;
+				break;
+			}
+		}
+
+		for (int i = candidateHL.cols - 1; i >= 0; i--)
+		{
+
+			if (gaussColsSums[i] > avg)
+			{
+				pos_right = i;
+				break;
+			}
+		}
+
+		//std::vector<std::pair<int, int>> startColsWidths = this->findThresholdAreas(candidateHL.cols, avg, gaussColsSums, false);
+
+		/*auto maxIt = std::max_element(startColsWidths.begin(), startColsWidths.end(),
 			[](const std::pair<int, int>& p1, const std::pair<int, int>& p2)
 			{
 				return p1.second < p2.second;
@@ -782,7 +863,8 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		for (auto i = startColsWidths.begin(); i != startColsWidths.end(); ++i)
 			qDebug() << (*i).first << " " << (*i).second;
 
-		cv::Rect rect = cv::Rect((*maxIt).first, 0, (*maxIt).second, candidateHL.rows);
+		cv::Rect rect = cv::Rect((*maxIt).first, 0, (*maxIt).second, candidateHL.rows);*/
+		cv::Rect rect = cv::Rect(pos_left, 0, pos_right - pos_left + 1, candidateHL.rows);
 
 		rect += currentRect.tl(); //translate back
 		float weight = this->rectRank(rankImg, rect); 
@@ -797,13 +879,17 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 }
 
 //returns true if rect satisfies candidate properties
-bool Wavelet::evalRect(cv::Rect rect, float rank ,cv::Mat evalImg)
+bool Wavelet::evalRect(cv::Rect rect, float rank, cv::Mat evalImg)
 {
 	/*if (rect.width <= rect.height * 2) //doesnt work for usa license plates
 		return false; */
 	if (rect.width < rect.height)
 		return false;
-	if (rank < 15)
+	/*if (rank < 10)
+		return false;*/
+	if (rect.height * GAP_TO_HEIGHT_RATIO >= rect.width)
+		return false;
+	if (rect.height * GAP_TO_HEIGHT_RATIO < 1)
 		return false;
 	
 
