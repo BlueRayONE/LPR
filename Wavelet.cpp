@@ -137,10 +137,15 @@ void Wavelet::run(cv::Mat img)
 		ImageViewer::viewImage(colorHL2_thres, "draw thresholds");
 #pragma endregion
 /*************************************************************************************/
+
+	//check a fre neighbours maybe and use binarized
+	cv::Mat bla;
+	cv::medianBlur(binarizedHL, bla, 3);
 	
 	
 	std::vector<std::pair<float, cv::Rect>> candidatesRough = findRoughCandidate(morphedHL, startRowsHeights); //morphed
-	candidatesRough = findNonIntCandidate(candidatesRough, 10);
+	candidatesRough = findNonIntCandidate(candidatesRough);
+	if (candidatesRough.size() >= 10) candidatesRough.resize(10);
 
 /*only for debugging*/
 /*************************************************************************************/
@@ -690,23 +695,57 @@ std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img
 
 	maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * img.rows);
 
-	//sort by highest weight (heightest weight first)
-	std::sort(candidates.begin(), candidates.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
-	{
-		return left.first > right.first;
-	});
 
 	return candidates;
 
 }
 
-std::vector<std::pair<float, cv::Rect>> Wavelet::findNonIntCandidate(std::vector<std::pair<float, cv::Rect>> candidates, int n)
+//finds (max) n distinct non intersecting rectangles
+std::vector<std::pair<float, cv::Rect>> Wavelet::findNonIntCandidate(std::vector<std::pair<float, cv::Rect>> candidates)
 {
+	//push first, goto next, if intersects one in list and has higher weight replace!!
+	//return first n
 	std::vector<std::pair<float, cv::Rect>> res;
 
-	int count = 0;
+	if (candidates.size() == 0)
+		return candidates;
+
+	res.push_back(candidates[0]);
+
+	for (int i = 1; i < candidates.size(); i++)
+	{
+		cv::Rect currentRect = candidates[i].second;
+		bool intersect = false;
+
+		for (int k = 0; k < res.size(); k++)
+		{
+			cv::Rect compareRect = res[k].second;
+			//check if existing candidates intersect with new one and replace if new one has better weight
+			if (this->rectIntersect(candidates[i].second, res[k].second))
+			{
+				intersect = true;
+				if(candidates[i].first > res[k].first)
+					res[k] = candidates[i]; //replace existing with new
+			}
+		}
+
+		if (!intersect)
+			res.push_back(candidates[i]);
+		
+	}
+
+	//sort by highest weight (heightest weight first)
+	std::sort(res.begin(), res.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
+	{
+		return left.first > right.first;
+	});
+
+	return res;
+
+	/*int count = 0;
 	for (int i = 0; i < candidates.size(); i++)
 	{
+		std::vector<std::pair<float, cv::Rect>> current_intersecting;
 		cv::Rect currentRect = candidates[i].second;
 		bool intersect = false;
 		for (int k = 0; k < i; k++)
@@ -714,6 +753,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findNonIntCandidate(std::vector
 			if (this->rectIntersect(candidates[k].second, currentRect))
 			{
 				intersect = true;
+				//current_intersecting
 				break;
 			}
 				
@@ -726,7 +766,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findNonIntCandidate(std::vector
 
 		}
 
-	}
+	}*/
 
 	return res;
 
@@ -824,7 +864,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 
 		double avg = std::accumulate(gaussColsSums, gaussColsSums + candidateHL.cols, 0.0) / (double) (candidateHL.cols);
 		avg = 1.0*avg;
-		//avg = 0.5*max;
+		avg = 0.5*max;
 
 		int pos_left = 0;
 		int pos_right = candidateHL.cols - 1;
