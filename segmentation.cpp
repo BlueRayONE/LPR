@@ -5,41 +5,94 @@ using namespace cv;
 
 Segmentation::Segmentation(const Mat& image): originalImage(image){
     binaryImage = computeBinaryImage();
+
 }
 
 Segmentation::~Segmentation(){
 
 }
 
-int Segmentation::findChars(int *horizontalHistogram, int size)
+Mat* Segmentation::findChars(int *horizontalHistogram, int size)
 {
     Mat* chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
-    int leftPtr  = 0;
-    int rightPtr = 0;
-    int* badges = new int[2]; //Variable für Plaketten (Start und Ende)
+    int leftPos  = 0;
+    int rightPos = 0;
+    int tmpPos = 0;
+    bool badgeFound = false;
+    bool failed = false;
 
-    rightPtr = findPeak(*horizontalHistogram, size, 0); //ersten Peak finden, um von da aus erstes
-                                                       //richtiges Valley zu finden
-    rightPtr =findValley(horizontalHistogram,size,rightPtr);
-    chars[0]= originalImage(Rect(0,0, rightPtr, #HEIGHT#));
+    rightPos = findValley(horizontalHistogram, size, 0); //blaues Euroband überspringen
+    line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA);
 
-    //Plaketten-Suche hier.
+    for(int charNo=0; charNo<10; charNo++){
+        if(rightPos >= size) break;
 
-    for(int charNo=1;rightPtr<size,charNo<10;charNo++){
-        leftPtr = rightPtr;
-        rightPtr=findValley(horizontalHistogram,size,leftPtr+10);
-        if(!(leftPtr+5 > badges[0] && rightPtr-5 < badges[1])){ //Es handelt sich nicht um Bereich der Plaketten
-            chars[charNo]= originalImage(Rect(leftPtr,0, rightPtr-leftPtr, #HEIGHT#));
+        leftPos = rightPos; // End of prev elem is start of new elem
+        tmpPos=findPeak(horizontalHistogram,size,leftPos); //Peak des nächsten Elements finden
+
+        if(tmpPos == -1){ //Keinen Peak gefunden!!
+            failed = true;
+            break;
         }
+
+        rightPos=findValley(horizontalHistogram,size,tmpPos) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
+
+        if(rightPos == -1){ //Kein Valley gefunden!!
+            failed = true;
+            break;
+        }
+
+        if(false /*badgeFound*/){
+                chars[charNo-1]= binaryImage(Rect(leftPos,0, rightPos-leftPos, binaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
+        }else{
+            if(true /*!isBadge(horizontalHistogram,leftPos,rightPos)*/){ //Es handelt sich nicht um Bereich der Plaketten
+//                chars[charNo]= binaryImage(Rect(0,leftPos, binaryImage.cols, rightPos-leftPos));
+                chars[charNo]= binaryImage(Rect(cv::Point(rightPos, 0), cv::Point(rightPos-leftPos, binaryImage.cols)));
+                line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
+            }else {
+                badgeFound = true;
+            }
+        }
+
+    }
+    return chars;
+}
+
+bool Segmentation::isBadge(int *horizontalHistogram, int leftPos, int rightPos)
+{
+    int peak;
+    Mat ch1, ch2, ch3;
+    vector<Mat> channels(3);
+    int valCh1, valCh2, valCh3;
+
+    split(originalImage, channels);     // split img
+    // get the channels (BGR order!)
+    ch1 = channels[0];
+    ch2 = channels[1];
+    ch3 = channels[2];
+
+    peak = findPeak(horizontalHistogram, rightPos,leftPos);
+    imshow("channel image blau", ch1);
+    imshow("channel image grün", ch2);
+    imshow("channel image rot", ch3);
+
+    valCh1 = originalImage.rows - countNonZero(ch1.col(peak));
+    valCh2 = originalImage.rows - countNonZero(ch2.col(peak));
+    valCh3 = originalImage.rows - countNonZero(ch3.col(peak));
+
+    if(valCh1 >= 5 || valCh2 >= 5 || valCh3 >= 5){
+        line(originalImage, cv::Point(peak, 0), Point(peak, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA);
+        imshow("image with badges", originalImage);
+        return true;
+    }else{
+        return false;
     }
 }
 
-
-
 int Segmentation::findValley(int *horizontalHistogram, int size, int position)
 {
-    const int thresholdValley = 15; //threshold alue, which indicates beginning of a valley
-    int result = position;
+    const int thresholdValley = 3; //threshold alue, which should indicate beginning of a valley
+    int result = -1;
 
     for(int i=position; i < size; i++){
         if(horizontalHistogram[i] <= thresholdValley){
@@ -56,8 +109,8 @@ int Segmentation::findValley(int *horizontalHistogram, int size, int position)
 
 int Segmentation::findPeak(int *horizontalHistogram, int size, int position)
 {
-    const int thresholdPeak = 50; //threshold value, which indicates beginning of a Peak
-    int result = position;
+    const int thresholdPeak = 30; //threshold value, which should indicate beginning of a peak
+    int result = -1;
 
     for(int i=position; i < size; i++){
         if(horizontalHistogram[i] >= thresholdPeak){
@@ -125,7 +178,7 @@ Mat Segmentation::cropHorizontal(){
 }
 
 Mat Segmentation::cropVertical(){
-
+    return originalImage;
 }
 
 int Segmentation::getVerticalStart(int *horizontalHistogram){
