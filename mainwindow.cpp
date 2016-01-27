@@ -23,6 +23,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_btn_openImage_clicked()
 {
+	 //QString imagePath = "";
     QString imagePath = QFileDialog::getOpenFileName(this, "Open Image...", QString(), QString("Images *.png *.jpg *.tiff *.tif *.JPG"));
 
     if(!imagePath.isNull() && !imagePath.isEmpty())
@@ -43,14 +44,15 @@ void MainWindow::on_btn_openImage_clicked()
            //ImageViewer::viewImage(img, "Original Image");
 
            //resizes img to height 800 maintaining aspect ratio
-           ImageViewer::viewImage(originalImage, "Original Image");
-           segmentationTest(originalImage);
+           ImageViewer::viewImage(originalImage, "Original Image", 300);
+           //segmentationTest(originalImage);
        }
     }
 
+
 }
 
-void MainWindow::segmentationTest(const cv::Mat& originalImage){
+/*void MainWindow::segmentationTest(const cv::Mat& originalImage){
     Segmentation segmentation(originalImage);
     int* horizontalHistogram = segmentation.computeHorizontalHistogram();
     int* verticalHistogram = segmentation.computeVerticalHistogram();
@@ -78,7 +80,7 @@ void MainWindow::writeIntoFile(int* array, int length, string filename){
     }
     myfile << ss.str();
     myfile.close();
-}
+}*/
 
 
 void MainWindow::enableGUI()
@@ -96,10 +98,12 @@ void MainWindow::disableGUI()
 void MainWindow::on_btn_localize_clicked()
 {
     //localize
+	Wavelet* h = new Wavelet();
+	h->run(originalImage);
 
 }
 
-cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
+/*cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
 {
     cv::Mat biFiImg, greyIm, eightBIm, thresholdIm;
 
@@ -116,7 +120,7 @@ cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
     cv::threshold(eightBIm, thresholdIm, 170, 255, CV_THRESH_BINARY);
 
     return thresholdIm;
-}
+}*/
 
 
 
