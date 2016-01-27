@@ -131,16 +131,15 @@ void Wavelet::run(cv::Mat img)
 		}
 	}
 
-	if (DEBUG_LEVEL >= 2)
+	if (DEBUG_LEVEL >= 1)
 		ImageViewer::viewImage(colorHL2, "draw thresholds adpative");
-	if (DEBUG_LEVEL >= 3)
+	if (DEBUG_LEVEL >= 2)
 		ImageViewer::viewImage(colorHL2_thres, "draw thresholds");
 #pragma endregion
 /*************************************************************************************/
 
 	//check a fre neighbours maybe and use binarized
-	cv::Mat bla;
-	cv::medianBlur(binarizedHL, bla, 3);
+	//this->filterNeighbours(binarizedHL);
 	
 	
 	std::vector<std::pair<float, cv::Rect>> candidatesRough = findRoughCandidate(morphedHL, startRowsHeights); //morphed
@@ -249,16 +248,17 @@ void Wavelet::run(cv::Mat img)
 			cv::Rect currentRect = candidatesRough[i].second;
 			cv::Rect original = cv::Rect(currentRect.tl().x * 2, currentRect.tl().y * 2, currentRect.width * 2, currentRect.height * 2);
 
-			cv::rectangle(colorHL, currentRect, cv::Scalar(255, 0, 0));
+			/*cv::rectangle(colorHL, currentRect, cv::Scalar(255, 0, 0));
 			cv::rectangle(colorBinHL, currentRect, cv::Scalar(255, 0, 0));
 			cv::rectangle(colorMorphHL, currentRect, cv::Scalar(255, 0, 0));
-			cv::rectangle(img, original, cv::Scalar(255, 0, 0));
+			cv::rectangle(img, original, cv::Scalar(255, 0, 0));*/
 
 			
 			if (i < candidatesReal.size())
 			{
 
 				cv::Rect currentRectEx = candidatesReal[i].second;
+				qDebug() << candidatesReal[i].first;
 				cv::Rect originalEx = cv::Rect(currentRectEx.tl().x * 2, currentRectEx.tl().y * 2, currentRectEx.width * 2, currentRectEx.height * 2);
 
 				cv::rectangle(colorHL, currentRectEx, cv::Scalar(0, g, r));
@@ -301,6 +301,7 @@ float* Wavelet::gaussFilter(int* arr, int n)
 	res[n-1] = 0; res[n-2] = 0; res[n-3] = 0; res[n-4] = 0;
 	float sigma = 0.05f;
 	int w = 2;
+
 
 	auto h = [sigma](int j) { return exp(-((j*sigma)*(j*sigma))/2); };
 
@@ -464,6 +465,41 @@ cv::Mat Wavelet::morph(cv::Mat img)
 
 
 	return res;
+}
+
+void Wavelet::filterNeighbours(cv::Mat img)
+{
+	for (int r = 1; r < img.rows - 1; r++)
+	{
+		for (int c = 1; c < img.cols - 1; c++)
+		{
+			int count = 0;
+
+			if (img.at<uchar>(r, c) != 0)
+			{
+				if (img.at<uchar>(r - 1, c - 1) == 0)
+					count++;
+				if (img.at<uchar>(r - 1, c) == 0)
+					count++;
+				if (img.at<uchar>(r - 1, c + 1) == 0)
+					count++;
+				if (img.at<uchar>(r, c - 1) == 0)
+					count++;
+				if (img.at<uchar>(r, c + 1) == 0)
+					count++;
+				if (img.at<uchar>(r + 1, c - 1) == 0)
+					count++;
+				if (img.at<uchar>(r + 1, c) == 0)
+					count++;
+				if (img.at<uchar>(r + 1, c + 1) == 0)
+					count++;
+			}
+
+			if (count == 8)
+				img.at<uchar>(r, c) = 0;
+
+		}
+	}
 }
 
 
@@ -675,7 +711,7 @@ std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img
 		debug = debug(debugRect);
 		int startRow = startRowsHeights[i].first;
 		int height = startRowsHeights[i].second;
-		int width = height * 5;
+		int width = height * HEIGHT_TO_WIDTH_RATIO;
 
 
 		for (int c = 0; c < img.cols - width; c++)
@@ -874,7 +910,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 
 			if (gaussColsSums[i] > avg)
 			{
-				pos_left = i;
+				pos_left = (i == 2) ? 0 : i;
 				break;
 			}
 		}
@@ -884,7 +920,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 
 			if (gaussColsSums[i] > avg)
 			{
-				pos_right = i;
+				pos_right = (i == candidateHL.cols - 3) ? candidateHL.cols - 1 : i;
 				break;
 			}
 		}
@@ -921,8 +957,8 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 //returns true if rect satisfies candidate properties
 bool Wavelet::evalRect(cv::Rect rect, float rank, cv::Mat evalImg)
 {
-	/*if (rect.width <= rect.height * 2) //doesnt work for usa license plates
-		return false; */
+	if (rect.width <= rect.height * 1.5) //doesnt work for usa license plates
+		return false;
 	if (rect.width < rect.height)
 		return false;
 	/*if (rank < 10)
