@@ -22,9 +22,9 @@ public:
 	void run(cv::Mat img);
 
 private:
+	const float HEIGHT_TO_WIDTH_RATIO = 5;
 	const float GAP_TO_HEIGHT_RATIO = 68.0f / 220;
 	const float AVG_WEIGHT = 0.5f; //1.1f;
-	//float MAX_RECT_HEIGHT_RATIO = 200.0f / 1000;
 	const float MAX_RECT_HEIGHT_RATIO = 110.0f / 1000; //120
 	const float MIN_RECT_HEIGHT_RATIO = 20.0f / 1000; //50
 	const float WEIGHT_STEP_SIZE = 0.025;
@@ -40,6 +40,8 @@ private:
 
 	cv::Mat binarize(cv::Mat img);
 	cv::Mat morph(cv::Mat img);
+
+	void filterNeighbours(cv::Mat img);
 
 	int* calcRowSums(cv::Mat img);
 	int* calcColSums(cv::Mat img);
