@@ -57,6 +57,7 @@ void MainWindow::on_btn_openImage_clicked()
 void MainWindow::enableGUI()
 {
     ui->btn_localize->setEnabled(true);
+    ui->radio_pca->setChecked(true);
 
 
 }
@@ -68,10 +69,16 @@ void MainWindow::disableGUI()
 
 void MainWindow::on_btn_localize_clicked()
 {
-    //localize
-	Wavelet* h = new Wavelet();
-	h->run(originalImage);
+    if(ui->radio_pca->isChecked())
+    {
 
+    }
+    else
+    {
+        Wavelet* h = new Wavelet();
+        h->run(originalImage);
+
+    }
 }
 
 /*cv::Mat MainWindow::lprThreshold(cv::Mat inputImg)
@@ -96,3 +103,13 @@ void MainWindow::on_btn_localize_clicked()
 
 
 
+
+void MainWindow::on_btn_crop_clicked()
+{
+
+}
+
+void MainWindow::on_btn_segment_clicked()
+{
+
+}

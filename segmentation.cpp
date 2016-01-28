@@ -5,6 +5,7 @@
 #include <string>
 
 using namespace cv;
+using namespace std;
 
 Segmentation::Segmentation(const Mat& image): originalImage(image){
 }

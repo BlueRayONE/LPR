@@ -32,6 +32,7 @@ void Wavelet::run(cv::Mat img)
 	cv::Mat grey;
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
 	cv::equalizeHist(grey, grey);
+	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(grey, "grey");
 
 	//generate Haar wavelet
 	cv::Mat grey32F = cv::Mat(grey.size(), CV_32FC1);
@@ -248,10 +249,10 @@ void Wavelet::run(cv::Mat img)
 			cv::Rect currentRect = candidatesRough[i].second;
 			cv::Rect original = cv::Rect(currentRect.tl().x * 2, currentRect.tl().y * 2, currentRect.width * 2, currentRect.height * 2);
 
-			/*cv::rectangle(colorHL, currentRect, cv::Scalar(255, 0, 0));
+			cv::rectangle(colorHL, currentRect, cv::Scalar(255, 0, 0));
 			cv::rectangle(colorBinHL, currentRect, cv::Scalar(255, 0, 0));
 			cv::rectangle(colorMorphHL, currentRect, cv::Scalar(255, 0, 0));
-			cv::rectangle(img, original, cv::Scalar(255, 0, 0));*/
+			cv::rectangle(img, original, cv::Scalar(255, 0, 0));
 
 			
 			if (i < candidatesReal.size())

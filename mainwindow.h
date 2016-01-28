@@ -31,6 +31,10 @@ private slots:
 
     //cv::Mat lprThreshold(cv::Mat inputImg);
 
+    void on_btn_crop_clicked();
+
+    void on_btn_segment_clicked();
+
 private:
     Ui::MainWindow *ui;
     void enableGUI();
