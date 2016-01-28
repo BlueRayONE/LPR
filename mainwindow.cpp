@@ -44,40 +44,10 @@ void MainWindow::on_btn_openImage_clicked()
 
            //resizes img to height 800 maintaining aspect ratio
            ImageViewer::viewImage(originalImage, "Original Image");
-           segmentationTest(originalImage);
+           Segmentation::segmentationTest(originalImage);
        }
     }
 
-}
-
-void MainWindow::segmentationTest(const cv::Mat& originalImage){
-    Segmentation segmentation(originalImage);
-    int* horizontalHistogram = segmentation.computeHorizontalHistogram();
-    int* verticalHistogram = segmentation.computeVerticalHistogram();
-
-    writeIntoFile(horizontalHistogram, originalImage.cols, "Horizontal.txt");
-    writeIntoFile(verticalHistogram, originalImage.rows, "Vertical.txt");
-
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
-    system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
-
-    ImageViewer::viewImage(segmentation.cropHorizontal(), "Cropped Image");
-
-    delete horizontalHistogram;
-    delete verticalHistogram;
-}
-
-void MainWindow::writeIntoFile(int* array, int length, string filename){
-    ofstream myfile;
-    myfile.open(filename);
-    stringstream ss;
-
-    for(int i = 0; i < length; i++){
-        ss << array[i];
-        ss << "\n";
-    }
-    myfile << ss.str();
-    myfile.close();
 }
 
 

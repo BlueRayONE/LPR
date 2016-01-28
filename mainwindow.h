@@ -34,8 +34,6 @@ private:
     void enableGUI();
     void disableGUI();
     cv::Mat originalImage;
-    void writeIntoFile(int* array, int length, std::string filename);
-    void segmentationTest(const cv::Mat& originalImage);
 };
 
 #endif // MAINWINDOW_H
