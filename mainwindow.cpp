@@ -46,8 +46,7 @@ void MainWindow::on_btn_openImage_clicked()
            //resizes img to height 800 maintaining aspect ratio
 
            ImageViewer::viewImage(originalImage, "Original Image");
-           Segmentation::segmentationTest(originalImage);
-       }
+        }
     }
 
 
@@ -106,7 +105,7 @@ void MainWindow::on_btn_localize_clicked()
 
 void MainWindow::on_btn_crop_clicked()
 {
-
+    Segmentation::segmentationTest(originalImage);
 }
 
 void MainWindow::on_btn_segment_clicked()

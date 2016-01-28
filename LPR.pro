@@ -18,7 +18,8 @@ SOURCES += main.cpp\
     QtOpencvCore.cpp \
     ImageViewer.cpp \
     Wavelet.cpp \
-    segmentation.cpp
+    segmentation.cpp \
+    binarizewolfjolion.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
@@ -26,7 +27,8 @@ HEADERS  += mainwindow.h \
     ImageViewer.h \
     daub.h \
     Wavelet.h \
-    segmentation.h
+    segmentation.h \
+    binarizewolfjolion.h
 
 FORMS    += mainwindow.ui
 

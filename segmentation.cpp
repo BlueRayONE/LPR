@@ -1,5 +1,7 @@
 #include "segmentation.h"
 #include "ImageViewer.h"
+#include "binarizewolfjolion.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -172,7 +174,7 @@ int* Segmentation::computeVerticalHistogram(const Mat& image){
     return histogram;
 }
 
-Mat Segmentation::computeBinaryImage(const Mat& image){
+Mat Segmentation::computeBinaryImage(Mat image){
     Mat filteredImage, greyImage, image8bit;
 
     filteredImage = Mat(image.rows, image.cols, image.type());
@@ -180,11 +182,10 @@ Mat Segmentation::computeBinaryImage(const Mat& image){
 
     cvtColor(filteredImage, greyImage, CV_BGR2GRAY);
     greyImage.convertTo(image8bit, CV_8UC1);
-    Mat binaryImage = Mat(greyImage.rows, greyImage.cols, greyImage.type());
+    Mat binaryImage(greyImage.rows, greyImage.cols, CV_8UC1);
+    NiblackSauvolaWolfJolion(greyImage, binaryImage, WOLFJOLION, 40, 40, 0.5, 128);
 
-    // threshold must be set manual
-    threshold(image8bit, binaryImage, 100, 255, CV_THRESH_BINARY);
-
+    imshow("Binary Image", binaryImage);
     return binaryImage;
 }
 

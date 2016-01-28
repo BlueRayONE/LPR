@@ -30,7 +30,7 @@ public:
     int findPeak(int *horizontalHistogram, int size, int position);
 
 private:
-    cv::Mat computeBinaryImage(const cv::Mat& image);
+    cv::Mat computeBinaryImage(cv::Mat image);
     int getVerticalStart(const cv::Mat& image);
     int getVerticalEnd(const cv::Mat& image);
     int getHorizontalStart(const cv::Mat& image);
