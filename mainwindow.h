@@ -31,12 +31,15 @@ private slots:
 
     //cv::Mat lprThreshold(cv::Mat inputImg);
 
+    void on_btn_crop_clicked();
+
+    void on_btn_segment_clicked();
+
 private:
     Ui::MainWindow *ui;
     void enableGUI();
     void disableGUI();
     cv::Mat originalImage;
-    //void writeIntoFile(int* array, int length, std::string filename);
     //void segmentationTest(const cv::Mat& originalImage);
 };
 
