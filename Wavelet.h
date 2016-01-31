@@ -22,14 +22,14 @@ public:
 	void run(cv::Mat img);
 
 private:
-	const float HEIGHT_TO_WIDTH_RATIO = 5;
+	const float HEIGHT_TO_WIDTH_RATIO = 5.0f;
 	const float GAP_TO_HEIGHT_RATIO = 68.0f / 220;
 	const float AVG_WEIGHT = 0.5f; //1.1f;
 	const float MAX_RECT_HEIGHT_RATIO = 110.0f / 1000; //120
 	const float MIN_RECT_HEIGHT_RATIO = 20.0f / 1000; //50
-	const float WEIGHT_STEP_SIZE = 0.025;
+	const float WEIGHT_STEP_SIZE = 0.025f;
 	const bool DISCARD_EXCEEDED_RECT = true;	
-	const int DEBUG_LEVEL = 2; //0 only results, 1 half debug, 2 full debug
+	const int DEBUG_LEVEL = 0; //0 only results, 1 half debug, 2 full debug
 
 	
 
@@ -60,6 +60,8 @@ private:
 	bool rectIntersect(cv::Rect r1, cv::Rect r2);
 
 	bool evalRect(cv::Rect rect, float rank, cv::Mat evalImg);
+
+	cv::Mat gbrHist(cv::Mat img);
 
 	template<typename T> void print(T* arr, int n);
 };
