@@ -83,7 +83,7 @@ void Wavelet::run(cv::Mat img)
 
 	std::vector<std::pair<int,float>> peaks = this->findPeaks(gauss, binarizedHL.rows);
 	std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gauss);
-	int maxID = maxIDVal.first;
+    //int maxID = maxIDVal.first;
 	float max = maxIDVal.second;
 
 	double avg = std::accumulate(gauss, gauss + binarizedHL.rows, 0.0) / (double) (binarizedHL.rows);
@@ -117,10 +117,10 @@ void Wavelet::run(cv::Mat img)
 		}
 	}
 
-	for (int i = 0; i < startRowsHeights.size(); i++)
+    for(auto currRowHeightPair : startRowsHeights)
 	{
-		auto current = startRowsHeights[i];
-		for (int r = current.first; r <= current.first + current.second; r++)
+        //auto current = startRowsHeights[i];
+        for (int r = currRowHeightPair.first; r <= currRowHeightPair.first + currRowHeightPair.second; r++)
 		{
 			for (int c = 0; c < colorHL2.cols; c++)
 			{
@@ -156,9 +156,9 @@ void Wavelet::run(cv::Mat img)
 	cvtColor(haarHL, colorHL, CV_GRAY2RGB);
 	cvtColor(binarizedHL, colorBinHL, CV_GRAY2RGB);
 	cvtColor(morphedHL, colorMorphHL, CV_GRAY2RGB);
-	for (int i = 0; i < candidatesRough.size(); i++)
+    for(auto pairWeightRect : candidatesRough)
 	{
-		cv::Rect currentRect = candidatesRough[i].second;
+        cv::Rect currentRect = pairWeightRect.second;
 
 		for (int r = currentRect.tl().y; r < currentRect.br().y; r++)
 		{
@@ -229,10 +229,9 @@ void Wavelet::run(cv::Mat img)
 /*************************************************************************************/
 	std::vector<cv::Mat> matCandidates;
 #pragma region draw_candidates
-	cv::Mat test;
 	//int count = (candidatesRough.size() > 10) ? 10 : candidatesRough.size();
-	int count = candidatesRough.size();
-	for (int i = 0; i < candidatesRough.size(); i++)
+    size_t count = candidatesRough.size();
+    for (size_t i = 0; i <  candidatesRough.size(); i++)
 	{
 		
 		if(i < count)
@@ -247,7 +246,7 @@ void Wavelet::run(cv::Mat img)
 			cv::rectangle(colorBinHL, candidatesRough[i].second, cv::Scalar(0, g, r));
 			cv::rectangle(colorMorphHL, candidatesRough[i].second, cv::Scalar(0, g, r));
 			cv::rectangle(img, original, cv::Scalar(0, g, r));*/
-			cv::Rect currentRect = candidatesRough[i].second;
+            cv::Rect currentRect = candidatesRough[i].second;
 			cv::Rect original = cv::Rect(currentRect.tl().x * 2, currentRect.tl().y * 2, currentRect.width * 2, currentRect.height * 2);
 
 			cv::rectangle(colorHL, currentRect, cv::Scalar(255, 0, 0));
@@ -259,8 +258,8 @@ void Wavelet::run(cv::Mat img)
 			if (i < candidatesReal.size())
 			{
 
-				cv::Rect currentRectEx = candidatesReal[i].second;
-				qDebug() << candidatesReal[i].first;
+                cv::Rect currentRectEx = candidatesReal[i].second;
+                qDebug() << candidatesReal[i].first;
 				cv::Rect originalEx = cv::Rect(currentRectEx.tl().x * 2 - 1, currentRectEx.tl().y * 2 - 1, currentRectEx.width * 2 + 2, currentRectEx.height * 2 + 2);
 
 				cv::rectangle(colorHL, currentRectEx, cv::Scalar(0, g, r));
@@ -269,12 +268,11 @@ void Wavelet::run(cv::Mat img)
 				cv::rectangle(img, originalEx, cv::Scalar(0, g, r));
 				matCandidates.push_back(img(cv::Rect(currentRectEx.tl().x * 2, currentRectEx.tl().y * 2, currentRectEx.width * 2, currentRectEx.height * 2)));
 
-				/*ONLY TEMPORARILY*/
-				/*if (i == 0) //extract first candidate
-				{
-					test = img(cv::Rect(currentRectEx.tl().x * 2, currentRectEx.tl().y * 2, currentRectEx.width * 2, currentRectEx.height * 2));
-				}*/
-				int k;
+				//ONLY TEMPORARILY
+				//if (i == 0) //extract first candidate
+				//{
+				//	test = img(cv::Rect(currentRectEx.tl().x * 2, currentRectEx.tl().y * 2, currentRectEx.width * 2, currentRectEx.height * 2));
+				//}
 			}
 
 		}
@@ -291,7 +289,7 @@ void Wavelet::run(cv::Mat img)
 	if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(img, "orig width candidates");
 	//if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(test, "candidate");
 
-	int i = 0;
+    /*int i = 0;
 	for (auto it = matCandidates.begin(); it != matCandidates.end(); ++it)
 	{
 		ImageViewer::viewImage((*it), "candidate" + std::to_string(i));
@@ -303,7 +301,7 @@ void Wavelet::run(cv::Mat img)
 
 		cv::waitKey(0);
 
-	}
+    }*/
 	
 	
 
@@ -573,12 +571,12 @@ std::pair<int, float> Wavelet::findMaxPeak(std::vector<std::pair<int, float>> pe
 	int maxid = 0;
 
 
-	for (int i = 1; i < peaks.size(); i++)
+    for (auto currentPairIdMax :  peaks)
 	{
-		if (peaks[i].second > max)
+        if (currentPairIdMax.second > max)
 		{
-			max = peaks[i].second;
-			maxid = peaks[i].first;
+            max = currentPairIdMax.second;
+            maxid = currentPairIdMax.first;
 		}
 	}
 
@@ -726,13 +724,13 @@ std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img
 	std::vector<std::pair<float, cv::Rect>> candidates;
 	int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * img.rows);
 
-	for (int i = 0; i < startRowsHeights.size(); i++) //number of candidates
+    for (auto currPairRowHeight : startRowsHeights) //number of candidates
 	{
 		debug = img.clone();
-		cv::Rect debugRect = cv::Rect(0, startRowsHeights[i].first, img.rows, startRowsHeights[i].second);
+        cv::Rect debugRect = cv::Rect(0, currPairRowHeight.first, img.rows, currPairRowHeight.second);
 		debug = debug(debugRect);
-		int startRow = startRowsHeights[i].first;
-		int height = startRowsHeights[i].second;
+        int startRow = currPairRowHeight.first;
+        int height = currPairRowHeight.second;
 		int width = height * HEIGHT_TO_WIDTH_RATIO;
 
 
@@ -761,72 +759,67 @@ std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img
 //finds (max) n distinct non intersecting rectangles
 std::vector<std::pair<float, cv::Rect>> Wavelet::findNonIntCandidate(std::vector<std::pair<float, cv::Rect>> candidates)
 {
-	//push first, goto next, if intersects one in list and has higher weight replace!!
-	//return first n
-	std::vector<std::pair<float, cv::Rect>> res;
+    //push first, goto next, if intersects one in list and has higher weight replace!!
+    //return first n
+    std::vector<std::pair<float, cv::Rect>> res;
 
-	if (candidates.size() == 0)
-		return candidates;
+    if (candidates.size() == 0)
+        return candidates;
 
-	res.push_back(candidates[0]);
+    res.push_back(candidates[0]);
 
-	for (int i = 1; i < candidates.size(); i++)
-	{
-		cv::Rect currentRect = candidates[i].second;
-		bool intersect = false;
+    for (size_t i = 1; i < candidates.size(); i++)
+    {
+        bool intersect = false;
 
-		for (int k = 0; k < res.size(); k++)
-		{
-			cv::Rect compareRect = res[k].second;
-			//check if existing candidates intersect with new one and replace if new one has better weight
-			if (this->rectIntersect(candidates[i].second, res[k].second))
-			{
-				intersect = true;
-				if(candidates[i].first > res[k].first)
-					res[k] = candidates[i]; //replace existing with new
-			}
-		}
+        for (size_t k = 0; k < res.size(); k++)
+        {
+            //check if existing candidates intersect with new one and replace if new one has better weight
+            if (this->rectIntersect(candidates[i].second, res[k].second))
+            {
+                intersect = true;
+                if(candidates[i].first > res[k].first)
+                    res[k] = candidates[i]; //replace existing with new
+            }
+        }
 
-		if (!intersect)
-			res.push_back(candidates[i]);
-		
-	}
+        if (!intersect)
+            res.push_back(candidates[i]);
 
-	//sort by highest weight (heightest weight first)
-	std::sort(res.begin(), res.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
-	{
-		return left.first > right.first;
-	});
+    }
 
-	return res;
+    //sort by highest weight (heightest weight first)
+    std::sort(res.begin(), res.end(), [](const std::pair<float, cv::Rect> &left, const std::pair<float, cv::Rect> &right)
+    {
+        return left.first > right.first;
+    });
 
-	/*int count = 0;
-	for (int i = 0; i < candidates.size(); i++)
-	{
-		std::vector<std::pair<float, cv::Rect>> current_intersecting;
-		cv::Rect currentRect = candidates[i].second;
-		bool intersect = false;
-		for (int k = 0; k < i; k++)
-		{
-			if (this->rectIntersect(candidates[k].second, currentRect))
-			{
-				intersect = true;
-				//current_intersecting
-				break;
-			}
-				
-		}
+    return res;
 
-		if (count < n && !intersect)
-		{
-			res.push_back(candidates[i]);
-			count++;
+    /*int count = 0;
+    for (int i = 0; i < candidates.size(); i++)
+    {
+        std::vector<std::pair<float, cv::Rect>> current_intersecting;
+        cv::Rect currentRect = candidates[i].second;
+        bool intersect = false;
+        for (int k = 0; k < i; k++)
+        {
+            if (this->rectIntersect(candidates[k].second, currentRect))
+            {
+                intersect = true;
+                //current_intersecting
+                break;
+            }
 
-		}
+        }
+        if (count < n && !intersect)
+        {
+            res.push_back(candidates[i]);
+            count++;
+        }
+    }*/
 
-	}*/
-
-	return res;
+    return res;
 
 }
 
@@ -874,9 +867,9 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 
 	}*/
 
-	for (int i = 0; i < candidates.size(); i++)
+    for (auto pairWeightRect : candidates)
 	{
-		cv::Rect currentRect = candidates[i].second;
+        cv::Rect currentRect = pairWeightRect.second;
 		cv::Rect originalRect = cv::Rect(currentRect.tl().x * 2, currentRect.tl().y * 2, currentRect.width * 2, currentRect.height * 2);
 
 		cv::Mat candidate = grey(originalRect).clone();
@@ -891,7 +884,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		if (DEBUG_LEVEL >= 1) ImageViewer::viewImage(candidateHaar, "Haar2");
 
 		cv::Mat candidateHL = cv::Mat(candidateHaar.rows / 2, candidateHaar.cols / 2, CV_8U);
-		for (int r = 0; r < candidateHaar.rows / 2; r++)
+        for (int r = 0; r < candidateHaar.rows / 2; r++)
 		{
 			for (int c = candidateHaar.cols / 2; c < candidateHaar.cols; c++)
 			{
@@ -916,7 +909,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 
 		std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums, candidateHL.cols);
 		std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gaussColsSums);
-		int maxID = maxIDVal.first;
+        //int maxID = maxIDVal.first;
 		float max = maxIDVal.second;
 
 
