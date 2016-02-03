@@ -2,8 +2,8 @@
 #define BINARIZEWOLFJOLION_H
 
 #include <stdio.h>
-#include <unistd.h>
-#include <getopt.h>
+//#include <unistd.h>
+//#include <getopt.h>
 #include <iostream>
 #include "opencv2/core/core.hpp"
 #include "opencv2/imgproc/imgproc.hpp"

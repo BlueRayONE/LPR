@@ -31,39 +31,34 @@ private:
 	const bool DISCARD_EXCEEDED_RECT = true;	
 	const int DEBUG_LEVEL = 0; //0 only results, 1 half debug, 2 full debug
 
-	
 
 	cv::Mat genGreyScale(cv::Mat img);
-
 	cv::Mat haarWavelet(cv::Mat &src, int NIter);
-	double* daubTrans(double*, int);
 
 	cv::Mat binarize(cv::Mat img);
 	cv::Mat morph(cv::Mat img);
 
 	void filterNeighbours(cv::Mat img);
 
-	int* calcRowSums(cv::Mat img);
-	int* calcColSums(cv::Mat img);
+	std::vector<int> calcRowSums(cv::Mat img);
+	std::vector<int> calcColSums(cv::Mat img);
 
-	std::vector<std::pair<int, float>> findPeaks(float* arr, int n);
-	std::pair<int, float> findMaxPeak(std::vector<std::pair<int, float>> peakIDs, float* arr);
-	float* gaussFilter(int* arr, int n);
-	float* movingAvg(float* arr, int n);
+	std::vector<std::pair<int, float>> findPeaks(std::vector<float> arr);
+	std::pair<int, float> findMaxPeak(std::vector<std::pair<int, float>> peakIDs, std::vector<float> arr);
+	std::vector<float> gaussFilter(std::vector<int> arr);
+	std::vector<float> movingAvg(std::vector<float> arr);
 
 	float rectRank(cv::Mat img, cv::Rect rect);
-	std::vector<std::pair<int, int>> findThresholdAreas(int n, double avg, float* rowSums, bool splitAreas = true);
+	std::vector<std::pair<int, int>> findThresholdAreas(double avg, std::vector<float>, bool splitAreas = true);
 	std::vector<std::pair<float, cv::Rect>> findRoughCandidate(cv::Mat img, std::vector<std::pair<int, int>> startRowsHeights);
 	std::vector<std::pair<float, cv::Rect>> findNonIntCandidate(std::vector<std::pair<float, cv::Rect>> candidates);
 	std::vector<std::pair<float, cv::Rect>> findExactCandidate(cv::Mat grey, cv::Mat rankImg, std::vector<std::pair<float, cv::Rect>> candidates);
 	
 	bool rectIntersect(cv::Rect r1, cv::Rect r2);
-
 	bool evalRect(cv::Rect rect, float rank, cv::Mat evalImg);
-
 	cv::Mat gbrHist(cv::Mat img);
 
-	template<typename T> void print(T* arr, int n);
+	template<typename T> void print(std::vector<T> arr);
 };
 
 

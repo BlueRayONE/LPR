@@ -69,27 +69,27 @@ void Wavelet::run(cv::Mat img)
 	binarizedHL = binarize(morphedHL);
 
 
-	int* binRS = this->calcRowSums(binarizedHL);
-	int* morphRS = this->calcRowSums(morphedHL);
-	int* haarRS = this->calcRowSums(haarHL);
+	std::vector<int> binRS = this->calcRowSums(binarizedHL);
+	std::vector<int> morphRS = this->calcRowSums(morphedHL);
+	std::vector<int> haarRS = this->calcRowSums(haarHL);
 
-	float* gauss = this->gaussFilter(morphRS, binarizedHL.rows); //morphRS
+	std::vector<float> gauss = this->gaussFilter(morphRS); //morphRS
 
-	this->print(binRS, binarizedHL.rows);
-	this->print(morphRS, binarizedHL.rows);
-	this->print(haarRS, binarizedHL.rows);
-	this->print(gauss, binarizedHL.rows);
+	this->print(binRS);
+	this->print(morphRS);
+	this->print(haarRS);
+	this->print(gauss);
 
 
-	std::vector<std::pair<int,float>> peaks = this->findPeaks(gauss, binarizedHL.rows);
+	std::vector<std::pair<int,float>> peaks = this->findPeaks(gauss);
 	std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gauss);
     //int maxID = maxIDVal.first;
 	float max = maxIDVal.second;
 
-	double avg = std::accumulate(gauss, gauss + binarizedHL.rows, 0.0) / (double) (binarizedHL.rows);
+	double avg = std::accumulate(gauss.begin(), gauss.end(), 0.0) / (double) (binarizedHL.rows);
 	avg = max;
 
-	std::vector<std::pair<int, int>> startRowsHeights =  this->findThresholdAreas(haarHL.rows, avg, gauss);
+	std::vector<std::pair<int, int>> startRowsHeights =  this->findThresholdAreas(avg, gauss);
 
 	for (auto i = startRowsHeights.begin(); i != startRowsHeights.end(); ++i)
 		qDebug() << (*i).first << " " << (*i).second;
@@ -313,12 +313,13 @@ void Wavelet::run(cv::Mat img)
 }
 
 
-float* Wavelet::gaussFilter(int* arr, int n)
+std::vector<float> Wavelet::gaussFilter(std::vector<int> arr)
 {
-	float* res = new float[n];
+	//float* res = new float[n];
+	std::vector<float> res = std::vector<float>(arr.size(), 0.0);
 	
-	res[0] = 0; res[1] = 0; res[2] = 0; res[3] = 0;
-	res[n-1] = 0; res[n-2] = 0; res[n-3] = 0; res[n-4] = 0;
+	/*res[0] = 0; res[1] = 0; res[2] = 0; res[3] = 0;
+	res[n-1] = 0; res[n-2] = 0; res[n-3] = 0; res[n-4] = 0;*/
 	float sigma = 0.05f;
 	int w = 2;
 
@@ -331,7 +332,7 @@ float* Wavelet::gaussFilter(int* arr, int n)
 		k += h(j);
 	}
 
-	for (int i = w; i < n - w; i++)
+	for (size_t i = w; i < arr.size() - w; i++)
 	{
 		float sum = 0;
 		for (int j = -w; j <= w; j++)
@@ -346,33 +347,33 @@ float* Wavelet::gaussFilter(int* arr, int n)
 
 }
 
-float* Wavelet::movingAvg(float* arr, int n)
+std::vector<float> Wavelet::movingAvg(std::vector<float> arr)
 {
-	float* sums = new float[n + 1];
-	float* res = new float[n];
+	std::vector<float> sums = std::vector<float>(arr.size() + 1, 0.0);
+	std::vector<float> res = std::vector<float>(arr.size(), 0.0);
+
 	float sum = 0;
-	sums[0] = 0;
 	
-	for (int i = 1; i < n + 1; i++)
+	for (size_t i = 1; i < sums.size(); i++)
 	{
 		sum += arr[i - 1];
 		sums[i] = sum;
 	}
 
-	res[0] = 0; res[1] = 0; res[n-1] = 0; res[n-2] = 0;
-	for (int i = 3; i < n - 1; i++)
+	for (size_t i = 3; i < res.size() - 1; i++)
 	{
 		res[i - 1] = (sums[i + 2] - sums[i - 3]) / 5;
 	}
 
-	delete sums;
 	return res;
 }
 
-int* Wavelet::calcRowSums(cv::Mat img)
+std::vector<int> Wavelet::calcRowSums(cv::Mat img)
 {
-	int* sums = new int[img.rows];
-	for (int r = 0; r < img.rows; r++)
+	//int* sums = new int[img.rows];
+	std::vector<int> sums = std::vector<int>(img.rows, 0);
+ 
+	for (size_t r = 0; r < sums.size(); r++)
 	{
 		int currSum = 0;
 		for (int c = 0; c < img.cols; c++)
@@ -381,15 +382,41 @@ int* Wavelet::calcRowSums(cv::Mat img)
 		}
 
 		sums[r] = currSum;
+
 	}
+
+	/*for (int r = 0; r < img.rows; r++)
+	{
+		int currSum = 0;
+		for (int c = 0; c < img.cols; c++)
+		{
+			currSum += img.at<uchar>(r, c);
+		}
+
+		sums[r] = currSum;
+	}*/
 
 	return sums;
 }
 
-int* Wavelet::calcColSums(cv::Mat img)
+std::vector<int> Wavelet::calcColSums(cv::Mat img)
 {
-	int* sums = new int[img.cols];
+	/*int* sums = new int[img.cols];
 	for (int c = 0; c < img.cols; c++)
+	{
+		int currSum = 0;
+		for (int r = 0; r < img.rows; r++)
+		{
+			currSum += img.at<uchar>(r, c);
+		}
+
+		sums[c] = currSum;
+	}*/
+
+	std::vector<int> sums = std::vector<int>(img.cols, 0);
+
+	//sums[i] = 
+	for (size_t c = 0; c < sums.size(); c++)
 	{
 		int currSum = 0;
 		for (int r = 0; r < img.rows; r++)
@@ -522,15 +549,12 @@ void Wavelet::filterNeighbours(cv::Mat img)
 	}
 }
 
-
-
-std::vector<std::pair<int, float>> Wavelet::findPeaks(float* arr, int n)
+std::vector<std::pair<int, float>> Wavelet::findPeaks(std::vector<float> arr)
 {
 	std::vector<std::pair<int, float>> peaks;
+	std::vector<float> firstDeriv(arr.size(), 0.0);
 
-	float* firstDeriv = new float[n];
-	firstDeriv[0] = 0;
-	for (int i = 1; i < n; i++)
+	for (size_t i = 1; i < arr.size(); i++)
 	{
 		firstDeriv[i] = arr[i] - arr[i - 1];
 	}
@@ -538,7 +562,7 @@ std::vector<std::pair<int, float>> Wavelet::findPeaks(float* arr, int n)
 	
 	bool sign = false;
 
-	for (int i = 1; i < n; i++)
+	for (size_t i = 1; i < arr.size(); i++)
 	{
 		if (firstDeriv[i] < 0)
 		{
@@ -560,7 +584,7 @@ std::vector<std::pair<int, float>> Wavelet::findPeaks(float* arr, int n)
 
 }
 
-std::pair<int, float> Wavelet::findMaxPeak(std::vector<std::pair<int, float>> peaks, float* arr)
+std::pair<int, float> Wavelet::findMaxPeak(std::vector<std::pair<int, float>> peaks, std::vector<float> arr)
 {
 	float max = 0;
 	if (peaks.size() > 0)
@@ -571,7 +595,7 @@ std::pair<int, float> Wavelet::findMaxPeak(std::vector<std::pair<int, float>> pe
 	int maxid = 0;
 
 
-    for (auto currentPairIdMax :  peaks)
+    for (auto currentPairIdMax : peaks)
 	{
         if (currentPairIdMax.second > max)
 		{
@@ -614,11 +638,11 @@ float Wavelet::rectRank(cv::Mat img, cv::Rect rect)
 
 }
 
-std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg, float* rowSums, bool splitAreas)
+std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(double avg, std::vector<float> rowSums, bool splitAreas)
 {
 	std::vector<std::pair<int, int>> startRowsHeights;
 
-	const int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * n);
+	const int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * rowSums.size());
 	float currentWeight = AVG_WEIGHT;
 
 	int currentHeight = 0;
@@ -627,7 +651,7 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 	bool isInThresh = false;
 
 
-	for (int r = 0; r < n; r++)
+	for (size_t r = 0; r < rowSums.size(); r++)
 	{
 		if (rowSums[r] >= currentWeight*avg)
 			isInThresh = true;
@@ -639,7 +663,7 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 				currentRectStart = r;
 			currentHeight++;
 
-			if (r == n - 1)
+			if (r == rowSums.size() - 1)
 				isInThresh = false;
 		}
 			
@@ -655,7 +679,7 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 				continue;
 			}
 
-			if (currentHeight > MIN_RECT_HEIGHT_RATIO * n || !splitAreas)
+			if (currentHeight > MIN_RECT_HEIGHT_RATIO * rowSums.size() || !splitAreas)
 			{
 				startRowsHeights.push_back(std::make_pair(r - currentHeight, currentHeight));
 			}
@@ -669,52 +693,6 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg,
 
 	return startRowsHeights;
 }
-
-
-/*std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(int n, double avg, float* rowSums)
-{
-	int currentHeight = 0;
-	bool wasInThresh = false;
-	bool isInThresh = false;
-	int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * n);
-
-	std::vector<std::pair<int, int>> startRowsHeights;
-
-	for (int r = 0; r < n; r++)
-	{
-		if (rowSums[r] >= AVG_WEIGHT*avg)
-			isInThresh = true;
-
-		if (isInThresh)
-		{
-			currentHeight++;
-			if (r == n - 1 && wasInThresh)
-			{
-				if (currentHeight > MIN_RECT_HEIGHT_RATIO * n)
-				{
-					startRowsHeights.push_back(std::make_pair(r - currentHeight, currentHeight));
-
-				}
-
-			}
-		}
-
-		else if (wasInThresh && !isInThresh)
-		{
-			if (currentHeight > MIN_RECT_HEIGHT_RATIO * n)
-			{
-				startRowsHeights.push_back(std::make_pair(r - currentHeight, currentHeight));
-
-			}
-			currentHeight = 0;
-		}
-
-		wasInThresh = isInThresh;
-		isInThresh = false;
-	}
-
-	return startRowsHeights;
-}*/
 
 std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img, std::vector<std::pair<int, int>> startRowsHeights)
 {
@@ -903,17 +881,17 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		cv::dilate(candidateHL, candidateHL, element);
 
 
-		int* colsSums = this->calcColSums(candidateHL);
-		float* gaussColsSums = this->gaussFilter(colsSums, candidateHL.cols);
-		this->print<float>(gaussColsSums, candidateHL.cols);
+		std::vector<int> colsSums = this->calcColSums(candidateHL);
+		std::vector<float> gaussColsSums = this->gaussFilter(colsSums);
+		this->print<float>(gaussColsSums);
 
-		std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums, candidateHL.cols);
+		std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums);
 		std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gaussColsSums);
         //int maxID = maxIDVal.first;
 		float max = maxIDVal.second;
 
 
-		double avg = std::accumulate(gaussColsSums, gaussColsSums + candidateHL.cols, 0.0) / (double) (candidateHL.cols);
+		double avg = std::accumulate(gaussColsSums.begin(), gaussColsSums.end(), 0.0) / (double) (candidateHL.cols);
 		avg = 1.0*avg;
 		avg = 0.5*max;
 
@@ -1049,12 +1027,12 @@ cv::Mat Wavelet::gbrHist(cv::Mat img)
 }
 
 
-template<typename T> void Wavelet::print(T* arr, int n)
+template<typename T> void Wavelet::print(std::vector<T> arr)
 {
 	QString res = "[";
-	for (int i = 0; i < n; i++)
+	for (auto const& elem : arr)
 	{
-		res += QString::number(arr[i]) + " ";
+		res += QString::number(elem) + " ";
 	}
 
 	res += "]";

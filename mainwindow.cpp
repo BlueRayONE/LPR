@@ -56,7 +56,11 @@ void MainWindow::on_btn_openImage_clicked()
 void MainWindow::enableGUI()
 {
     ui->btn_localize->setEnabled(true);
-    ui->radio_pca->setChecked(true);
+	ui->groupBox->setEnabled(true);
+	ui->btn_crop->setEnabled(true);
+	ui->btn_segment->setEnabled(true);
+
+    ui->radio_wavelet->setChecked(true);
 
 
 }
@@ -64,6 +68,9 @@ void MainWindow::enableGUI()
 void MainWindow::disableGUI()
 {
     ui->btn_localize->setEnabled(false);
+	ui->groupBox->setEnabled(false);
+	ui->btn_crop->setEnabled(false);
+	ui->btn_segment->setEnabled(false);
 }
 
 void MainWindow::on_btn_localize_clicked()
