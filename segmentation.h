@@ -5,6 +5,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include <vector>
+#include "binarizewolfjolion.h"
 
 
 class Segmentation
@@ -30,7 +31,7 @@ public:
     int findPeak(int *horizontalHistogram, int size, int position);
 
 private:
-    cv::Mat computeBinaryImage(cv::Mat image);
+    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version);
     int getVerticalStart(const cv::Mat& image);
     int getVerticalEnd(const cv::Mat& image);
     int getHorizontalStart(const cv::Mat& image);
