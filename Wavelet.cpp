@@ -19,7 +19,6 @@ Wavelet::Wavelet()
 {
 }
 
-
 Wavelet::~Wavelet()
 {
 }
@@ -303,11 +302,6 @@ void Wavelet::run(cv::Mat img)
 
     }*/
 	
-	
-
-
-
-
 
 	
 }
@@ -638,7 +632,7 @@ float Wavelet::rectRank(cv::Mat img, cv::Rect rect)
 
 }
 
-std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(double avg, std::vector<float> rowSums, bool splitAreas)
+std::vector<std::pair<int, int>> Wavelet::findThresholdAreas(double avg, std::vector<float> rowSums, bool splitAreas)
 {
 	std::vector<std::pair<int, int>> startRowsHeights;
 
@@ -694,7 +688,7 @@ std::vector<std::pair<int, int>>  Wavelet::findThresholdAreas(double avg, std::v
 	return startRowsHeights;
 }
 
-std::vector<std::pair<float, cv::Rect>>  Wavelet::findRoughCandidate(cv::Mat img, std::vector<std::pair<int, int>> startRowsHeights)
+std::vector<std::pair<float, cv::Rect>> Wavelet::findRoughCandidate(cv::Mat img, std::vector<std::pair<int, int>> startRowsHeights)
 {
 	//breite: 520 hoehe: 110
 	cv::Mat debug, debug2;
