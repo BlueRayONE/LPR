@@ -141,8 +141,7 @@ void Segmentation::segmentationTest(const cv::Mat& testImage){
 int* Segmentation::computeHorizontalHistogram(const Mat& image){
     int width = image.cols;
     int height = image.rows;
-    Mat binaryImage = computeBinaryImage(image, NIBLACK);
-    imshow("NIBLACK", binaryImage);
+    Mat binaryImage = computeBinaryImage(image, WOLFJOLION);
 
     int* histogram = new int[width];
     for(int i = 0; i < width; i++){
@@ -156,14 +155,12 @@ int* Segmentation::computeHorizontalHistogram(const Mat& image){
 int* Segmentation::computeVerticalHistogram(const Mat& image){
     int width = image.cols;
     int height = image.rows;
-    Mat binaryImage = computeBinaryImage(image, NIBLACK);
+    Mat binaryImage = computeBinaryImage(image, WOLFJOLION);
 
     int* histogram = new int[height];
     for(int i = 0; i < height; i++){
        histogram[i] = width - countNonZero(binaryImage.row(i));
     }
-
-    writeIntoFile(histogram, image.rows, "Vertical.txt");
     return histogram;
 }
 
@@ -180,7 +177,6 @@ Mat Segmentation::computeBinaryImage(Mat image, NiblackVersion version){
     int window = 40;
     NiblackSauvolaWolfJolion(greyImage, binaryImage, version, window, window, 0.5, 128);
 
-    //imshow("Binary Image", binaryImage);
     return binaryImage;
 }
 
@@ -198,7 +194,7 @@ Mat Segmentation::cropHorizontal(const Mat& image){
 Mat Segmentation::cropImage(const Mat& image){
     Mat horizontalCropped = cropHorizontal(image);
     writeIntoFile(computeHorizontalHistogram(horizontalCropped), horizontalCropped.cols, "Vertical.txt");
-    system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
+    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
 
     int start = getHorizontalStart(horizontalCropped);
     int end = getHorizontalEnd(horizontalCropped);
