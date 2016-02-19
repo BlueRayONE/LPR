@@ -67,6 +67,8 @@ void Wavelet::run(cv::Mat img)
 
 	binarizedHL = binarize(morphedHL);
 
+	cv::threshold(morphedHL, morphedHL, THRESH_TO_ZERO, 255, CV_THRESH_TOZERO);
+
 
 	std::vector<int> binRS = this->calcRowSums(binarizedHL);
 	std::vector<int> morphRS = this->calcRowSums(morphedHL);
@@ -137,9 +139,6 @@ void Wavelet::run(cv::Mat img)
 		ImageViewer::viewImage(colorHL2_thres, "draw thresholds");
 #pragma endregion
 /*************************************************************************************/
-
-	//check a fre neighbours maybe and use binarized
-	//this->filterNeighbours(binarizedHL);
 	
 	
 	std::vector<std::pair<float, cv::Rect>> candidatesRough = findRoughCandidate(morphedHL, startRowsHeights); //morphed
