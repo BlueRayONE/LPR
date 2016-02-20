@@ -10,8 +10,9 @@ cv::Mat global;
 
 void MSER::run(cv::Mat img)
 {
-	cv::Mat grey, mser_p, mser_m;
+	cv::Mat grey, mser_p, mser_m, img_bk;
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
+	img_bk = img.clone();
 
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
@@ -35,10 +36,19 @@ void MSER::run(cv::Mat img)
 	global = colorP;
 
 	auto bboxes_p_real = realDiscardBBoxes_p(bboxes_p_pre, bboxes_m);
+	bboxes_p_real = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); //discard overlapping with same number of inner elements again
+
+	//TODO: delete overlapping canidates --> keep bigger only if bigger one has more inner elements, otherwise keep smaller
+	//maybe relax rect afterwards to compensate cut edges for segmentation stage
+
+
+	std::vector<cv::Mat> canidates;
 
 	for (auto rect : bboxes_p_real)
 	{
 		cv::rectangle(colorP, rect, cv::Scalar(0, 255, 0), 1);
+		cv::rectangle(img, rect, cv::Scalar(0, 255, 0), 1);
+		canidates.push_back(img_bk(rect));
 	}
 
 	for (cv::Rect rect : bboxes_m)
@@ -47,10 +57,16 @@ void MSER::run(cv::Mat img)
 	}
 
 
-
-	ImageViewer::viewImage(grey, "grey", 400);
 	ImageViewer::viewImage(colorP, "response mser_p", 400);
 	ImageViewer::viewImage(mser_m, "response mser_m", 400);
+	ImageViewer::viewImage(img, "candidates", 400);
+
+	size_t i = 0;
+	for (auto roi : canidates)
+	{
+		ImageViewer::viewImage(roi, "candidate " + std::to_string(i));
+		i++;
+	}
 }
 
 std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool plus)
@@ -179,20 +195,75 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 //returns true if all almost same height and returns avg height, avg width
 std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
 {
+	auto power2 = [](double x) { return x * x; };
+	uint sumWidth = 0;
+	uint sumHeight = 0;
+
+	for (auto rect : innerElements)
+	{
+		sumWidth += rect.width;
+		sumHeight += rect.height;
+	}
+
+	double meanWidth = 1.0 * sumWidth / innerElements.size();
+	double meanHeight = 1.0 * sumHeight / innerElements.size();
+
+	double sqrSumWidth = 0; double sqrSumHeight = 0;
+	for (auto rect : innerElements)
+	{
+		sqrSumWidth += power2(rect.width - meanWidth);
+		sqrSumHeight += power2(rect.height - meanHeight);
+	}
+
+	double stdevWidth = std::sqrt(sqrSumWidth / innerElements.size());
+	double stdevHeight = std::sqrt(sqrSumHeight / innerElements.size());
+
+
 	int minHeight = -1; int maxHeight = -1;
 	int minWidth = -1; int maxWidth = -1;
 	float avgHeight = 0; float avgWidth = 0;
 
-	if (innerElements.size() > 0)
+	size_t count = 0;
+	for (auto elem : innerElements)
+	{
+		float leftBoundary0 = meanHeight - 2 * stdevHeight;
+		float rightBoundary0 = meanHeight + 2 * stdevHeight;
+		float leftBoundary1 = meanWidth - 2 * stdevWidth;
+		float rightBoundary1 = meanWidth + 2 * stdevWidth;
+
+		if (leftBoundary0 < elem.height && elem.height < rightBoundary0 && leftBoundary1 < elem.width && elem.width < rightBoundary1)
+		{
+			if (elem.height > maxHeight)
+				maxHeight = elem.height;
+			if (elem.height < minHeight || minHeight == -1)
+				minHeight = elem.height;
+
+			if (elem.width > maxWidth)
+				maxWidth = elem.width;
+			if (elem.width < minWidth || minWidth == -1)
+				minWidth = elem.width;
+
+			avgHeight += elem.height; avgWidth += elem.width;
+
+			count++;
+		}
+	}
+
+	avgHeight /= count; avgWidth /= count;
+
+
+
+
+	/*if (innerElements.size() > 0)
 	{
 		maxHeight = innerElements[0].height;
 		maxWidth = innerElements[0].width;
 		minHeight = innerElements[0].height;
 		minWidth = innerElements[0].width;
-	}
+	}*/
 		
 
-	for (auto elem : innerElements)
+	/*for (auto elem : innerElements)
 	{
 		if (elem.height > maxHeight)
 			maxHeight = elem.height;
@@ -207,7 +278,7 @@ std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElement
 		avgHeight += elem.height; avgWidth += elem.width;
 	}
 
-	avgHeight /= innerElements.size(); avgWidth /= innerElements.size();
+	avgHeight /= innerElements.size(); avgWidth /= innerElements.size();*/
 
 	bool equal = false;
 	if (maxHeight <= MAX_HEIGHT_SCALE * minHeight && maxWidth <= MAX_WIDTH_SCALE * minWidth)
@@ -218,7 +289,7 @@ std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElement
 }
 
 
-std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
+std::vector<std::pair<cv::Rect, int>> MSER::getInnerElements(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
 {
 	std::vector<std::pair<cv::Rect, int>> rectInnerElements;
 
@@ -241,8 +312,67 @@ std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, st
 		}
 	}
 
+	return rectInnerElements;
+
+}
+
+
+std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
+{
+	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getInnerElements(boxes_p, boxes_v);
+
+	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
 	std::vector<std::pair<cv::Rect, int>> res;
+	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
+	res.push_back(rectInnerElements[0]);
+
+	for (size_t i = 1; i < rectInnerElements.size(); i++)
+	{
+		auto elem1 = rectInnerElements[i];
+		bool intersect = false;
+		for (size_t j = 0; j < res.size(); j++)
+		{
+			auto elem2 = res[j];
+			if (intersectArea(elem1.first, elem2.first) == elem1.first.area()) //maybe dont use overlap but real inner rectangle instead, elem1 is smaller one
+			{
+
+				if (elem1.second == elem2.second)
+				{
+					intersect = true;
+					res[j] = elem1;
+				}
+				else if (elem1.second < elem2.second)
+				{
+					intersect = true;
+					res[j] = elem2;
+				}
+
+			}
+		}
+
+		if (!intersect)
+			res.push_back(elem1);
+	}
+
+	std::vector<cv::Rect> res_flattened;
+	for (auto elem : res)
+		res_flattened.push_back(elem.first);
+
+	return res_flattened;
+
+}
+
+
+std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
+{
+	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getInnerElements(boxes_p, boxes_v);
+
+	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
+
+
+	std::vector<std::pair<cv::Rect, int>> res;
+	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
 	res.push_back(rectInnerElements[0]);
 
 	for (size_t i = 1; i < rectInnerElements.size(); i++)
