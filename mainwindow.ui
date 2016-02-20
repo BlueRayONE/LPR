@@ -38,6 +38,13 @@
           </widget>
          </item>
          <item>
+          <widget class="QRadioButton" name="radio_mser">
+           <property name="text">
+            <string>MSER</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QRadioButton" name="radio_wavelet">
            <property name="text">
             <string>Wavelet</string>

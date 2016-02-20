@@ -11,6 +11,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "Wavelet.h"
+#include "MSER.h"
 
 
 namespace Ui {

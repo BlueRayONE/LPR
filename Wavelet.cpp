@@ -26,12 +26,15 @@ Wavelet::~Wavelet()
 void Wavelet::run(cv::Mat img)
 {
 	//preprocess
-	img = cv::Mat(img, cv::Range(0, (img.rows & ~1)), cv::Range(0, (img.cols & ~1)));
+	img = cv::Mat(img, cv::Range(0, (img.rows & ~3)), cv::Range(0, (img.cols & ~3)));
+
+	if (img.rows > 800)
+		SCALE_FACTOR = 2;
 
 	cv::Mat grey;
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
 	cv::equalizeHist(grey, grey);
-	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(grey, "grey");
+	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(grey, "grey", 800);
 
 	//generate Haar wavelet
 	cv::Mat grey32F = cv::Mat(grey.size(), CV_32FC1);
@@ -245,7 +248,7 @@ void Wavelet::run(cv::Mat img)
 			cv::rectangle(colorMorphHL, candidatesRough[i].second, cv::Scalar(0, g, r));
 			cv::rectangle(img, original, cv::Scalar(0, g, r));*/
             cv::Rect currentRect = candidatesRough[i].second;
-			cv::Rect original = cv::Rect(currentRect.tl().x * 2, currentRect.tl().y * 2, currentRect.width * 2, currentRect.height * 2);
+			cv::Rect original = cv::Rect(currentRect.tl().x * 2 - 1, currentRect.tl().y * 2 - 1, currentRect.width * 2 + 2, currentRect.height * 2 + 2);
 
 			cv::rectangle(colorHL, currentRect, cv::Scalar(255, 0, 0));
 			cv::rectangle(colorBinHL, currentRect, cv::Scalar(255, 0, 0));
@@ -287,21 +290,84 @@ void Wavelet::run(cv::Mat img)
 	if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(img, "orig width candidates");
 	//if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(test, "candidate");
 
+
+	//cv::destroyAllWindows();
     /*int i = 0;
 	for (auto it = matCandidates.begin(); it != matCandidates.end(); ++it)
 	{
-		ImageViewer::viewImage((*it), "candidate" + std::to_string(i));
-		ImageViewer::viewImage(gbrHist((*it)), "hist candidate" + std::to_string(i));
+		cv::Mat src = (*it);
 
-		cv::cvtColor((*it), (*it), cv::COLOR_RGB2HSV);
-		ImageViewer::viewImage((*it), "candidate HSV" + std::to_string(i));
+		
+		cv::Mat SRC = src.clone();
+
+		int origRows = src.rows;
+		cv::Mat colVec = SRC.reshape(1, src.rows*src.cols); // change to a Nx3 column vector
+		cv::Mat colVecD, bestLabels, centers;
+		int attempts = 3;
+		int clusts = 5;
+		double eps = 0.001;
+		colVec.convertTo(colVecD, CV_32FC3, 1.0 / 255.0); // convert to floating point
+		double compactness = kmeans(colVecD, clusts, bestLabels, cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, attempts, eps), attempts, cv::KMEANS_PP_CENTERS, centers);
+
+		
+		std::vector<std::pair<cv::Vec3b, uint>> dominantColors = std::vector<std::pair<cv::Vec3b, uint>>(clusts);
+		for (int i = 0; i < clusts; i++)
+		{
+			dominantColors[i] = std::make_pair(cv::Vec3b(centers.at<float>(i, 0) * 255, centers.at<float>(i, 1) * 255, centers.at<float>(i, 2) * 255), 0);
+		}
+
+
+		//repaint image with dominant colors
+		cv::Mat labelsImg = bestLabels.reshape(1, origRows); // single channel image of labels
+		cv::Mat repaint = cv::Mat(src.rows, src.cols, src.type());
+
+
+		for (int r = 0; r < src.rows; r++)
+		{
+			for (int c = 0; c < src.cols; c++)
+			{
+				uint label = labelsImg.at<uint>(r, c);
+				dominantColors[label].second++;
+				float blue, green, red;
+				blue = centers.at<float>(label, 0);
+				green = centers.at<float>(label, 1);
+				red = centers.at<float>(label, 2);
+				repaint.at<cv::Vec3b>(r, c) = cv::Vec3b(blue * 255, green * 255, red * 255); //label in labelsImg.at<uchar>(r,c)
+
+			}
+		}
+
+		std::sort(dominantColors.begin(), dominantColors.end(), [&](std::pair<cv::Vec3b, uint> i1, std::pair<cv::Vec3b, uint> i2)
+		{
+			return i1.second >= i2.second;
+
+		});
+		//ImageViewer::viewImage(repaint, "repaint candidate");
+		
+
+		bool hasGrey = false;
+		//eval dominant colors
+		size_t i = 0;
+		for (auto color : dominantColors)
+		{
+			int max = std::max({color.first[0], color.first[1], color.first[2]});
+			int min = std::min({color.first[0], color.first[1], color.first[2]});
+			//check if color is grey
+			if (max - min <= 10)
+			{
+				hasGrey = true;
+			}
+			if (i == 2)
+				break;
+			i++;
+		}
+
+		if (hasGrey)  ImageViewer::viewImage(src, "candidate real");
+		
 		i++;
-
 		cv::waitKey(0);
 
     }*/
-	
-
 	
 }
 
@@ -878,15 +944,13 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		std::vector<float> gaussColsSums = this->gaussFilter(colsSums);
 		this->print<float>(gaussColsSums);
 
+		int count = std::count(gaussColsSums.begin(), gaussColsSums.end(), 0.0);
+
 		std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums);
 		std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gaussColsSums);
         //int maxID = maxIDVal.first;
 		float max = maxIDVal.second;
 
-
-		double avg = std::accumulate(gaussColsSums.begin(), gaussColsSums.end(), 0.0) / (double) (candidateHL.cols);
-		avg = 1.0*avg;
-		avg = 0.5*max;
 
 		int pos_left = 0;
 		int pos_right = candidateHL.cols - 1;
@@ -894,7 +958,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		for (int i = 0; i < candidateHL.cols; i++)
 		{
 
-			if (gaussColsSums[i] > avg)
+			if (gaussColsSums[i] > 0.5 * max)
 			{
 				pos_left = (i == 2) ? 0 : i;
 				break;
@@ -904,7 +968,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		for (int i = candidateHL.cols - 1; i >= 0; i--)
 		{
 
-			if (gaussColsSums[i] > avg)
+			if (gaussColsSums[i] > 0.5 * max)
 			{
 				pos_right = (i == candidateHL.cols - 3) ? candidateHL.cols - 1 : i;
 				break;

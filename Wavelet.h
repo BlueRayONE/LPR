@@ -5,6 +5,7 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/objdetect/objdetect.hpp>
 #include <QDebug>
 #include <vector>
 
@@ -23,14 +24,16 @@ public:
 
 private:
 	const float THRESH_TO_ZERO = 1;
-	const float HEIGHT_TO_WIDTH_RATIO = 5.0f;
+	const float HEIGHT_TO_WIDTH_RATIO = 4.728f; //5.0
 	const float GAP_TO_HEIGHT_RATIO = 68.0f / 220;
 	const float AVG_WEIGHT = 0.5f; //0.5f;
 	const float MAX_RECT_HEIGHT_RATIO = 110.0f / 1000; //120
-	const float MIN_RECT_HEIGHT_RATIO = 20.0f / 1000; //50
+	const float MIN_RECT_HEIGHT_RATIO = 30.0f / 1000; //50
 	const float WEIGHT_STEP_SIZE = 0.025f;
 	const bool DISCARD_EXCEEDED_RECT = true;	
 	const int DEBUG_LEVEL = 2; //0 only results, 1 half debug, 2 full debug
+
+	int SCALE_FACTOR;
 
 
 	cv::Mat genGreyScale(cv::Mat img);

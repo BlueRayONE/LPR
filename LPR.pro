@@ -19,7 +19,8 @@ SOURCES += main.cpp\
     ImageViewer.cpp \
     Wavelet.cpp \
     segmentation.cpp \
-    binarizewolfjolion.cpp
+    binarizewolfjolion.cpp \
+    MSER.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
@@ -28,7 +29,8 @@ HEADERS  += mainwindow.h \
     daub.h \
     Wavelet.h \
     segmentation.h \
-    binarizewolfjolion.h
+    binarizewolfjolion.h \
+    MSER.h
 
 FORMS    += mainwindow.ui
 
