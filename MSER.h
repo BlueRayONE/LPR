@@ -21,11 +21,15 @@ public:
 	~MSER();
 	void run(cv::Mat img);
 private:
-	const float MAX_HEIGHT_SCALE = 1.5f;
-	const float MAX_WIDTH_SCALE = 1.5f;
-	const float MAX_BBOX_HEIGHT_SCALE = 2;
-	//const uint MAX_BBOX_WIDTH_VARIANCE = 10;
+	const float MAX_HEIGHT_SCALE = 1.5f;			//
+	const float MAX_WIDTH_SCALE = 2.0f;				// same as MAX_HEIGHT_SCALE but for rect width
+	const float MAX_BBOX_HEIGHT_SCALE = 3.0f;			// 
+	const float MAX_RADIENT_ALLOWED = 0.35f;		// approx. 20 degree
+	const float MAX_PART_OUTLIERS_ALLOWED = 0.15f;	//equals 10 percent outlier
+	const uint MIN_DISTANCE_OUTLIER = 5;			//min distance point to line to be marked as outlier in pixel
 
+
+	std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
 	//only for performance
 	std::vector<cv::Rect> preDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
 
