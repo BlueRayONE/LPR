@@ -1,5 +1,7 @@
 #include "MSER.h"
+#include <chrono>
 
+using namespace std::chrono;
 
 MSER::MSER()
 {
@@ -8,7 +10,7 @@ MSER::MSER()
 
 cv::Mat global;
 
-void MSER::run(cv::Mat img)
+std::vector<cv::Rect> MSER::run(cv::Mat img)
 {
 	cv::Mat grey, mser_p, mser_m, img_bk;
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
@@ -36,15 +38,14 @@ void MSER::run(cv::Mat img)
 	global = colorP;
 
 	auto bboxes_p_real = realDiscardBBoxes_p(bboxes_p_pre, bboxes_m);
-	bboxes_p_real = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); //discard overlapping with same number of inner elements again
+	auto bboxes_p_post = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); 
 
-	//TODO: delete overlapping canidates --> keep bigger only if bigger one has more inner elements, otherwise keep smaller
-	//maybe relax rect afterwards to compensate cut edges for segmentation stage
-
+	//TODO: real candidate overlapped by false canidate which has more inner elements f.ex. shadows or edges
+	//see R8 (should use biggest) vs MAZDA (should use smalles)
 
 	std::vector<cv::Mat> canidates;
 
-	for (auto rect : bboxes_p_real)
+	for (auto rect : bboxes_p_post)
 	{
 		cv::rectangle(colorP, rect, cv::Scalar(0, 255, 0), 1);
 		cv::rectangle(img, rect, cv::Scalar(0, 255, 0), 1);
@@ -57,7 +58,8 @@ void MSER::run(cv::Mat img)
 	}
 
 
-	ImageViewer::viewImage(colorP, "response mser_p", 400);
+	ImageViewer::viewImage(colorP, "canidate mser_p", 400);
+	ImageViewer::viewImage(mser_p, "response mser_p", 400);
 	ImageViewer::viewImage(mser_m, "response mser_m", 400);
 	ImageViewer::viewImage(img, "candidates", 400);
 
@@ -67,6 +69,8 @@ void MSER::run(cv::Mat img)
 		ImageViewer::viewImage(roi, "candidate " + std::to_string(i));
 		i++;
 	}
+
+	return bboxes_p_post;
 }
 
 std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool plus)
@@ -357,7 +361,20 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 	std::vector<cv::Rect> res_flattened;
 	for (auto elem : res)
-		res_flattened.push_back(elem.first);
+	{
+		//check if rect is too wide
+		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO && elem.first.width > elem.first.height)
+		{
+			//and relax borders by RELAX_PIXELS
+			int w = RELAX_PIXELS;
+			int x = (elem.first.x - w < 0) ? 0 : elem.first.x - w;
+			int y = (elem.first.y - w < 0) ? 0 : elem.first.y - w;
+			res_flattened.push_back(cv::Rect(x, y, elem.first.width + w, elem.first.height + w));
+		}
+			
+
+	}
+		
 
 	return res_flattened;
 

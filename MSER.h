@@ -19,7 +19,7 @@ class MSER
 public:
 	MSER();
 	~MSER();
-	void run(cv::Mat img);
+	std::vector<cv::Rect> run(cv::Mat img);
 private:
 	const float MAX_HEIGHT_SCALE = 1.5f;			//
 	const float MAX_WIDTH_SCALE = 2.0f;				// same as MAX_HEIGHT_SCALE but for rect width
@@ -27,6 +27,8 @@ private:
 	const float MAX_RADIENT_ALLOWED = 0.35f;		// approx. 20 degree
 	const float MAX_PART_OUTLIERS_ALLOWED = 0.15f;	//equals 15 percent outlier
 	const uint MIN_DISTANCE_OUTLIER = 5;			//min distance point to line to be marked as outlier in pixel
+	const float MAX_ASPECT_RATIO = 5.0f;			//eu license plate are 52cm by 11cm --> 52/11 = 4.72727272
+	const uint RELAX_PIXELS = 5;
 
 
 	std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
