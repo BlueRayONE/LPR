@@ -48,6 +48,16 @@ std::vector<cv::Rect> MSER::run(cv::Mat imgOrig)
 
 	std::vector<cv::Mat> canidates;
 
+	for (auto rect : bboxes_p_real)
+	{
+		int w = RELAX_PIXELS;
+		int x = (rect.x - w < 0) ? 0 : rect.x - w;
+		int y = (rect.y - w < 0) ? 0 : rect.y - w;
+
+		cv::rectangle(colorP, cv::Rect(x, y, rect.width + w, rect.height + w), cv::Scalar(0, 255, 255), 1);
+		cv::rectangle(img, cv::Rect(x, y, rect.width + w, rect.height + w), cv::Scalar(0, 255, 255), 1);
+	}
+
 	for (auto rect : bboxes_p_post)
 	{
 		cv::rectangle(colorP, rect, cv::Scalar(0, 255, 0), 1);
@@ -55,15 +65,17 @@ std::vector<cv::Rect> MSER::run(cv::Mat imgOrig)
 		canidates.push_back(img_bk(rect));
 	}
 
+	cv::Mat colorM;
+	cvtColor(mser_m, colorM, CV_GRAY2RGB);
 	for (cv::Rect rect : bboxes_m)
 	{
-		cv::rectangle(mser_m, rect, cv::Scalar(255), 1);
+		cv::rectangle(colorM, rect, cv::Scalar(0, 255, 255), 1);
 	}
 
 
 	ImageViewer::viewImage(colorP, "canidate mser_p", 400);
 	ImageViewer::viewImage(mser_p, "response mser_p", 400);
-	ImageViewer::viewImage(mser_m, "response mser_m", 400);
+	ImageViewer::viewImage(colorM, "response mser_m", 400);
 	ImageViewer::viewImage(img, "candidates", 400);
 
 	size_t i = 0;
@@ -238,15 +250,9 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 		//STEP 3: check if MSER+ bbox almost same size as average height
 		if (rect_p.height - MAX_BBOX_HEIGHT_SCALE * std::get<1>(tuple) > 0)
 			continue;
-		
-		//maybe do
-		/*if (rect_p.width - innerElements.size() * std::get<2>(tuple) > MAX_BBOX_WIDTH_VARIANCE)
-			continue;*/
-
 
 		//all steps passed --> push back
 		res.push_back(rect_p);
-
 
 	}
 

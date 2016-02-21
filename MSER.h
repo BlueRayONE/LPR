@@ -27,7 +27,7 @@ private:
 	const float MAX_RADIENT_ALLOWED = 0.35f;		// approx. 20 degree
 	const float MAX_PART_OUTLIERS_ALLOWED = 0.15f;	//equals 15 percent outlier
 	const uint MIN_DISTANCE_OUTLIER = 5;			//min distance point to line to be marked as outlier in pixel
-	const float MAX_ASPECT_RATIO = 5.0f;			//eu license plate are 52cm by 11cm --> 52/11 = 4.72727272
+	const float MAX_ASPECT_RATIO = 5.5f;			//eu license plate are 52cm by 11cm --> 52/11 = 4.72727272
 	const uint RELAX_PIXELS = 5;
 
 
