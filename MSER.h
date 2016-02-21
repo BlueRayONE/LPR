@@ -34,15 +34,9 @@ private:
 	std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
 	std::vector<std::pair<cv::Rect, int>> getInnerElements(std::vector<cv::Rect>, std::vector<cv::Rect>);
 
-
-	//only for performance
 	std::vector<cv::Rect> preDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
-
-	//real discard
 	std::vector<cv::Rect> realDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
-
 	std::vector<cv::Rect> postDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
-	std::vector<cv::Rect> discardBBoxes_m(std::vector<cv::Rect>);
 
 	std::tuple<bool, float, float> sameSize(std::vector<cv::Rect> innerElements);
 };

@@ -82,7 +82,7 @@ void MainWindow::on_btn_localize_clicked()
     else if(ui->radio_mser->isChecked())
     {
 		MSER* m = new MSER();
-		m->run(originalImage);
+		locatedCandidates = m->run(originalImage);
     }
     else
     {
@@ -116,7 +116,7 @@ void MainWindow::on_btn_localize_clicked()
 
 void MainWindow::on_btn_crop_clicked()
 {
-    Segmentation::segmentationTest(originalImage);
+	Segmentation::segmentationTest(originalImage);
 }
 
 void MainWindow::on_btn_segment_clicked()

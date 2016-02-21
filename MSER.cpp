@@ -10,9 +10,10 @@ MSER::MSER()
 
 cv::Mat global;
 
-std::vector<cv::Rect> MSER::run(cv::Mat img)
+std::vector<cv::Rect> MSER::run(cv::Mat imgOrig)
 {
-	cv::Mat grey, mser_p, mser_m, img_bk;
+	cv::Mat img, grey, mser_p, mser_m, img_bk;
+	img = imgOrig.clone();
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
 	img_bk = img.clone();
 
@@ -41,7 +42,9 @@ std::vector<cv::Rect> MSER::run(cv::Mat img)
 	auto bboxes_p_post = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); 
 
 	//TODO: real candidate overlapped by false canidate which has more inner elements f.ex. shadows or edges
-	//see R8 (should use biggest) vs MAZDA (should use smalles)
+	//see R8 (should use biggest) vs MAZDA (cropped) (should use smalles)
+	//keep bigger if mser+ has same size mser- maybe plus different size (it's okay to add junk to candidate if bigger has more license plate digits, keep smaller if bigger adds only more junk)
+	//TODO: scale down big pictures and scale up found candidate rectangle
 
 	std::vector<cv::Mat> canidates;
 
@@ -73,6 +76,8 @@ std::vector<cv::Rect> MSER::run(cv::Mat img)
 	return bboxes_p_post;
 }
 
+
+//returns MSER-feature points and their bounding box as pairs
 std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool plus)
 {
 	cv::Mat mser, grey2;
@@ -81,6 +86,17 @@ std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool 
 	else
 		grey2 = grey;
 
+	//int _delta=5						//how many different gray levels does a region need to be stable to be considered max stable
+	//int _min_area=60					//reject too small
+	//int _max_area=14400				//or too big areas		--> could be small in order to get rid of too big candidates
+	//double _max_variation=0.25		//or too big variance	--> should stay small to get many bbox for same object --> robust line fit
+	
+	//next args only apply for color image
+	//double _min_diversity=.2			//or too similar
+	//int _max_evolution=200			//evolution steps
+	//double _area_threshold=1.01		//threshold to cause re-init
+	//double _min_margin=0.003			//ignore too small margin
+	//int _edge_blur_size=5				//blur kernel size
 	cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 200, 1.01, 0.003, 5); //all default values
 	ptr->setPass2Only(true);
 
@@ -101,6 +117,49 @@ std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool 
 	}
 
 	return std::make_pair(mser, bboxes);
+
+}
+
+
+std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
+{
+	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getInnerElements(boxes_p, boxes_v);
+
+	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
+
+
+	std::vector<std::pair<cv::Rect, int>> res;
+	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
+	res.push_back(rectInnerElements[0]);
+
+	for (size_t i = 1; i < rectInnerElements.size(); i++)
+	{
+		auto elem1 = rectInnerElements[i];
+		bool intersect = false;
+		for (size_t j = 0; j < res.size(); j++)
+		{
+			auto elem2 = res[j];
+			if (intersectArea(elem1.first, elem2.first)) //maybe dont use overlap but real inner rectangle instead
+			{
+
+				if (std::abs(elem1.second - elem2.second) <= 2) //they have (almost) same amount of inner elements --> keep inner
+				{
+					intersect = true;
+					res[j] = elem1;
+				}
+
+			}
+		}
+
+		if (!intersect)
+			res.push_back(elem1);
+	}
+
+	std::vector<cv::Rect> res_flattened;
+	for (auto elem : res)
+		res_flattened.push_back(elem.first);
+
+	return res_flattened;
 
 }
 
@@ -128,6 +187,7 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 			}
 		}
 
+		if (centerPoints.size() == 0) continue; //really should not happen unless preprocess stage failed or was not called
 
 		//STEP 1: fit line (robust)
 		cv::Vec4f line;
@@ -151,7 +211,6 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 		for (size_t i = 0; i < centerPoints.size(); i++)
 		{
 			cv::Point current = centerPoints[i];
-			float distance = algDist(current);
 			if (algDist(current) > MIN_DISTANCE_OUTLIER)
 				outliers.push_back(current);
 			else
@@ -191,6 +250,7 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 	}
 
+	global = reset.clone();
 	return res;
 
 }
@@ -255,35 +315,6 @@ std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElement
 
 	avgHeight /= count; avgWidth /= count;
 
-
-
-
-	/*if (innerElements.size() > 0)
-	{
-		maxHeight = innerElements[0].height;
-		maxWidth = innerElements[0].width;
-		minHeight = innerElements[0].height;
-		minWidth = innerElements[0].width;
-	}*/
-		
-
-	/*for (auto elem : innerElements)
-	{
-		if (elem.height > maxHeight)
-			maxHeight = elem.height;
-		if (elem.height < minHeight)
-			minHeight = elem.height;
-
-		if (elem.width > maxWidth)
-			maxWidth = elem.width;
-		if (elem.width < minWidth)
-			minWidth = elem.width;
-
-		avgHeight += elem.height; avgWidth += elem.width;
-	}
-
-	avgHeight /= innerElements.size(); avgWidth /= innerElements.size();*/
-
 	bool equal = false;
 	if (maxHeight <= MAX_HEIGHT_SCALE * minHeight && maxWidth <= MAX_WIDTH_SCALE * minWidth)
 		equal = true;
@@ -331,14 +362,36 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
 	res.push_back(rectInnerElements[0]);
 
+	cv::Mat reset = global.clone();
+
 	for (size_t i = 1; i < rectInnerElements.size(); i++)
 	{
 		auto elem1 = rectInnerElements[i];
 		bool intersect = false;
+		global = reset.clone();
+		cv::rectangle(global, elem1.first, cv::Scalar(0, 255, 0), 1);
 		for (size_t j = 0; j < res.size(); j++)
 		{
 			auto elem2 = res[j];
-			if (intersectArea(elem1.first, elem2.first) == elem1.first.area()) //maybe dont use overlap but real inner rectangle instead, elem1 is smaller one
+			cv::rectangle(global, elem2.first, cv::Scalar(255, 255, 0), 1);
+
+			if (intersectArea(elem1.first, elem2.first) == elem2.first.area())
+			{
+
+				if (elem1.second == elem2.second)
+				{
+					intersect = true;
+					res[j] = elem2;
+				}
+				else if (elem1.second > elem2.second)
+				{
+					intersect = true;
+					res[j] = elem1;
+				}
+
+			}
+			//swap roles
+			if (intersectArea(elem1.first, elem2.first) == elem1.first.area())
 			{
 
 				if (elem1.second == elem2.second)
@@ -380,48 +433,6 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 }
 
-
-std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
-{
-	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getInnerElements(boxes_p, boxes_v);
-
-	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
-
-
-	std::vector<std::pair<cv::Rect, int>> res;
-	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
-	res.push_back(rectInnerElements[0]);
-
-	for (size_t i = 1; i < rectInnerElements.size(); i++)
-	{
-		auto elem1 = rectInnerElements[i];
-		bool intersect = false;
-		for (size_t j = 0; j < res.size(); j++)
-		{
-			auto elem2 = res[j];
-			if (intersectArea(elem1.first, elem2.first)) //maybe dont use overlap but real inner rectangle instead
-			{
-				
-				if (std::abs(elem1.second - elem2.second) <= 2) //they have (almost) same amount of inner elements --> keep inner
-				{
-					intersect = true;
-					res[j] = elem1;
-				}
-					
-			}
-		}
-
-		if (!intersect)
-			res.push_back(elem1);
-	}
-
-	std::vector<cv::Rect> res_flattened;
-	for (auto elem : res)
-		res_flattened.push_back(elem.first);
-
-	return res_flattened;
-
-}
 
 
 MSER::~MSER()
