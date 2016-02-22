@@ -105,8 +105,9 @@ int Segmentation::findValley(int *horizontalHistogram, int size, int position)
 {
     const int thresholdValley = 3; //threshold value, which should indicate beginning of a valley
     int result = -1;
+    int i;
 
-    for(int i=position; i < size; i++){ //Punkt finden der Schwellwert unterschreitet
+    for(i=position; i < size; i++){ //Punkt finden der Schwellwert unterschreitet
         if(horizontalHistogram[i] <= thresholdValley){
             while(horizontalHistogram[i+1] < horizontalHistogram[i] && i<size) i++; //lok. Minimum finden
             result = i;
@@ -123,8 +124,9 @@ int Segmentation::findPeak(int *horizontalHistogram, int size, int position)
 {
     const int thresholdPeak = 30; //threshold value, which should indicate beginning of a peak
     int result = -1;
+    int i;
 
-    for(int i=position; i < size; i++){ //Punkt finden der Schwellwert überschreitet
+    for(i=position; i < size; i++){ //Punkt finden der Schwellwert überschreitet
         if(horizontalHistogram[i] >= thresholdPeak){ //lok. Maximum finden
             while(horizontalHistogram[i+1] > horizontalHistogram[i] && i<size) i++;
             result = i;
