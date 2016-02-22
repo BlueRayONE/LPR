@@ -45,7 +45,7 @@ void MainWindow::on_btn_openImage_clicked()
 
            //resizes img to height 800 maintaining aspect ratio
 
-           ImageViewer::viewImage(originalImage, "Original Image");
+           ImageViewer::viewImage(originalImage, "Original Image", 400);
         }
     }
 
@@ -60,7 +60,7 @@ void MainWindow::enableGUI()
 	ui->btn_crop->setEnabled(true);
 	ui->btn_segment->setEnabled(true);
 
-    ui->radio_wavelet->setChecked(true);
+    ui->radio_mser->setChecked(true);
 
 
 }
@@ -79,11 +79,15 @@ void MainWindow::on_btn_localize_clicked()
     {
 
     }
+    else if(ui->radio_mser->isChecked())
+    {
+		MSER* m = new MSER();
+		locatedCandidates = m->run(originalImage);
+    }
     else
     {
         Wavelet* h = new Wavelet();
         h->run(originalImage);
-
     }
 }
 
@@ -112,7 +116,7 @@ void MainWindow::on_btn_localize_clicked()
 
 void MainWindow::on_btn_crop_clicked()
 {
-    Segmentation::segmentationTest(originalImage);
+	Segmentation::segmentationTest(originalImage);
 }
 
 void MainWindow::on_btn_segment_clicked()

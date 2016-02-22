@@ -11,6 +11,7 @@
 #include "opencv2/highgui/highgui.hpp"
 
 #include "Wavelet.h"
+#include "MSER.h"
 
 
 namespace Ui {
@@ -40,6 +41,7 @@ private:
     void enableGUI();
     void disableGUI();
     cv::Mat originalImage;
+	std::vector<cv::Rect> locatedCandidates;
     //void segmentationTest(const cv::Mat& originalImage);
 };
 
