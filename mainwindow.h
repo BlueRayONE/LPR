@@ -7,8 +7,8 @@
 #include "ImageReader.hpp"
 #include "ImageViewer.h"
 #include "QtOpencvCore.hpp"
-#include "opencv2/core/core.hpp"
-#include "opencv2/highgui/highgui.hpp"
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 #include "Wavelet.h"
 #include "MSER.h"

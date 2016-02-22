@@ -109,16 +109,17 @@ std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool 
 	//double _area_threshold=1.01		//threshold to cause re-init
 	//double _min_margin=0.003			//ignore too small margin
 	//int _edge_blur_size=5				//blur kernel size
-//	cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 200, 1.01, 0.003, 5); //all default values
-//	ptr->setPass2Only(true);
+
+    cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 200, 1.01, 0.003, 5); //all default values
+    ptr->setPass2Only(true);
 
 	mser = cv::Mat(grey.rows, grey.cols, CV_8U, cv::Scalar(0));
 
 
 	std::vector< std::vector< cv::Point > > msers;
 	std::vector< cv::Rect > bboxes;
-//	ptr->detectRegions(grey2, msers, bboxes);
 
+    ptr->detectRegions(grey2, msers, bboxes);
 
 	for (std::vector<cv::Point> v : msers)
 	{

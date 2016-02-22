@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
-#include <tesseract/ocrclass.h>
+//#include <tesseract/ocrclass.h>
 
 #define PI 3.14159265
 
