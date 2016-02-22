@@ -266,7 +266,7 @@ Mat Segmentation::cropImage(const Mat& image){
     Mat horizontalCropped = cropHorizontal(rotated);
 
     // make all blue parts black
-    Mat hsvImage;
+/*    Mat hsvImage;
     cvtColor(horizontalCropped, hsvImage, CV_BGR2HSV);
     MatIterator_<Vec3b> it = hsvImage.begin<Vec3b>();
     MatIterator_<Vec3b> it_end = hsvImage.end<Vec3b>();
@@ -291,7 +291,7 @@ Mat Segmentation::cropImage(const Mat& image){
         }
     }
     cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
-    imshow("blue to black", horizontalCropped);
+    imshow("blue to black", horizontalCropped);*/
 
 
     //Shearing
