@@ -28,9 +28,6 @@ Mat* Segmentation::findChars(int *horizontalHistogram, int size)
     bool badgeFound = false;
     bool failed = false;
 
-    rightPos = findValley(horizontalHistogram, size, 0); //blaues Euroband überspringen
-    line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA);
-
     for(int charNo=0; charNo<10; charNo++){
         if(rightPos >= size) break;
 
@@ -41,12 +38,20 @@ Mat* Segmentation::findChars(int *horizontalHistogram, int size)
             failed = true;
             break;
         }
+        else if(tmpPos == -2) //Ende erreicht
+        {
+
+        }
 
         rightPos=findValley(horizontalHistogram,size,tmpPos) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
 
-        if(rightPos == -1){ //Kein Valley gefunden!!
+        if(rightPos == -1){ //Keinen Valley gefunden!!
             failed = true;
             break;
+        }
+        else if(rightPos == -2) //Ende erreicht
+        {
+
         }
 
         if(false /*badgeFound*/){
@@ -98,18 +103,19 @@ bool Segmentation::isBadge(int *horizontalHistogram, int leftPos, int rightPos)
 
 int Segmentation::findValley(int *horizontalHistogram, int size, int position)
 {
-    const int thresholdValley = 3; //threshold alue, which should indicate beginning of a valley
+    const int thresholdValley = 3; //threshold value, which should indicate beginning of a valley
     int result = -1;
+    int i;
 
-    for(int i=position; i < size; i++){
+    for(i=position; i < size; i++){ //Punkt finden der Schwellwert unterschreitet
         if(horizontalHistogram[i] <= thresholdValley){
-            while(horizontalHistogram[i+1] < horizontalHistogram[i] && i<size){
-                i++;
-            }
+            while(horizontalHistogram[i+1] < horizontalHistogram[i] && i<size) i++; //lok. Minimum finden
             result = i;
             break;
         }
     }
+
+    if((result == -1) && (i>size-5)) result = -2; //Ende des Bildes erreicht?
 
     return result;
 }
@@ -118,16 +124,17 @@ int Segmentation::findPeak(int *horizontalHistogram, int size, int position)
 {
     const int thresholdPeak = 30; //threshold value, which should indicate beginning of a peak
     int result = -1;
+    int i;
 
-    for(int i=position; i < size; i++){
-        if(horizontalHistogram[i] >= thresholdPeak){
-            while(horizontalHistogram[i+1] > horizontalHistogram[i] && i<size){
-                i++;
-            }
+    for(i=position; i < size; i++){ //Punkt finden der Schwellwert überschreitet
+        if(horizontalHistogram[i] >= thresholdPeak){ //lok. Maximum finden
+            while(horizontalHistogram[i+1] > horizontalHistogram[i] && i<size) i++;
             result = i;
             break;
         }
     }
+
+    if((result == -1) && (i>size-5)) result = -2; //Ende des Bildes erreicht?
 
     return result;
 }
