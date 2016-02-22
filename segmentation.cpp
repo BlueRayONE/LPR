@@ -1,4 +1,4 @@
-#include "segmentation.h"
+﻿#include "segmentation.h"
 #include "ImageViewer.h"
 #include "binarizewolfjolion.h"
 
@@ -187,57 +187,21 @@ void Segmentation::segmentationTest(const cv::Mat& testImage){
 
     Mat croppedImage = segmentation.cropImage(testImage);
     ImageViewer::viewImage(croppedImage, "Cropped Image");
-
-//    Mat hsvImage;
-//    cvtColor(testImage, hsvImage, CV_BGR2HSV);
-
-//    for(int i = 0; i < testImage.rows; i++){
-//        for(int j = 0; j < testImage.cols; j++){
-//            Vec3b pixel = hsvImage.at<Vec3b>(i,j);
-//            int hue = pixel[0];
-//            int saturation = pixel[1];
-//            int value = pixel[2];
-
-//            pair<int,int> h, s, v;
-//            h.first = 105;
-//            h.second = 120;
-//            s.first = 140;
-//            s.second = 255;
-//            v.first = 7.0/10 *255;
-//            v.second = 255;
-
-//            if(segmentation.isInInterval(hue,h)){
-//                pixel[1] = 255;
-//                pixel[2] = 255;
-//                hsvImage.at<Vec3b>(i,j) = pixel;
-//            }
-//        }
-//    }
-//    Mat outputImage;
-//    cvtColor(hsvImage, outputImage, CV_HSV2BGR);
-//    imshow("test for blue detection", outputImage);
-
-
 }
 
 Mat Segmentation::computeBinaryImage(Mat image, NiblackVersion version){
     Mat greyImage, image8bit;
 
-//    filteredImage = Mat(image.rows, image.cols, image.type());
-//    bilateralFilter(image, filteredImage, 9, 100, 1000);
     cvtColor(image, greyImage, CV_BGR2GRAY);
     greyImage.convertTo(image8bit, CV_8UC1);
     Mat binaryImage(greyImage.rows, greyImage.cols, CV_8UC1);
 
-    int window = 40;
+    int window = 10;
     NiblackSauvolaWolfJolion(greyImage, binaryImage, version, window, window, 0.5, 128);
     return binaryImage;
 }
 
 Mat Segmentation::cropHorizontal(const Mat& image){
-    int* verticalHistogram = computeVerticalHistogram(image);
-    delete verticalHistogram;
-
     int start = getVerticalStart(image);
     int end = getVerticalEnd(image);
 
@@ -262,11 +226,18 @@ Mat Segmentation::cropImage(const Mat& image){
     bilateralFilter(image, filteredImage, 9, 100, 1000);
 
     Mat rotated = rotate(filteredImage);
-    //imshow("Rotated", rotated);
+    imshow("Rotated", rotated);
     Mat horizontalCropped = cropHorizontal(rotated);
+    imshow("horizontalCropped", horizontalCropped);
+
+    cout << horizontalCropped.rows << ", " << horizontalCropped.cols << endl;
+
+    if(horizontalCropped.rows == 0 && horizontalCropped.cols == 0){
+        cerr << "Horizontal cropping failed" << endl;
+    }
 
     // make all blue parts black
-/*    Mat hsvImage;
+    Mat hsvImage;
     cvtColor(horizontalCropped, hsvImage, CV_BGR2HSV);
     MatIterator_<Vec3b> it = hsvImage.begin<Vec3b>();
     MatIterator_<Vec3b> it_end = hsvImage.end<Vec3b>();
@@ -291,7 +262,7 @@ Mat Segmentation::cropImage(const Mat& image){
         }
     }
     cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
-    imshow("blue to black", horizontalCropped);*/
+    imshow("blue to black", horizontalCropped);
 
 
     //Shearing
