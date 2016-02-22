@@ -41,15 +41,11 @@ win32 {
     INCLUDEPATH += $$(OPENCV_DIR)/include
 
     Debug:LIBS +=  -L$$(OPENCV_DIR)/x86/vc12/lib \
-                -lopencv_core2411d \
-                -lopencv_highgui2411d \
-                -lopencv_imgproc2411d \
-                -lopencv_features2d2411d
+                -lopencv_ts300d \
+                -lopencv_world300d
     Release:LIBS +=  -L$$(OPENCV_DIR)/x86/vc12/lib \
-            -lopencv_core2411d \
-            -lopencv_highgui2411d \
-            -lopencv_imgproc2411d \
-            -lopencv_features2d2411d
+                -lopencv_ts300 \
+                -lopencv_world300
 
 
 }
