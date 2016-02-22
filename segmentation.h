@@ -18,7 +18,7 @@ public:
     int* computeVerticalHistogram(const cv::Mat& image);
     cv::Mat cropHorizontal(const cv::Mat& binaryImage);
     cv::Mat cropImage(const cv::Mat& binaryImage);
-    cv::Mat* findChars(int *horizontalHistogram, int size);
+    static cv::Mat* findChars(const cv::Mat &originalImage);
 
 
     static void segmentationTest(const cv::Mat& testImage);

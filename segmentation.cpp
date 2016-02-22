@@ -19,47 +19,49 @@ Segmentation::~Segmentation(){
 
 }
 
-Mat* Segmentation::findChars(int *horizontalHistogram, int size)
+Mat* Segmentation::findChars(const cv::Mat& originalImage)
 {
+    Segmentation segmentation(originalImage);
+
     Mat* chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
     int leftPos  = 0;
     int rightPos = 0;
     int tmpPos = 0;
     bool badgeFound = false;
     bool failed = false;
+    int size = originalImage.cols;
+    cv::Mat image = originalImage.clone();
+
+    int* horizontalHistogram = segmentation.computeHorizontalHistogram(image, WOLFJOLION);
 
     for(int charNo=0; charNo<10; charNo++){
         if(rightPos >= size) break;
 
         leftPos = rightPos; // End of prev elem is start of new elem
-        tmpPos=findPeak(horizontalHistogram,size,leftPos); //Peak des nächsten Elements finden
+        tmpPos=segmentation.findPeak(horizontalHistogram,size,leftPos); //Peak des nächsten Elements finden
 
         if(tmpPos == -1){ //Keinen Peak gefunden!!
             failed = true;
             break;
         }
-        else if(tmpPos == -2) //Ende erreicht
-        {
+        else if(tmpPos == -2) break;//Ende erreicht
 
-        }
 
-        rightPos=findValley(horizontalHistogram,size,tmpPos) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
+        rightPos=segmentation.findValley(horizontalHistogram,size,tmpPos) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
 
         if(rightPos == -1){ //Keinen Valley gefunden!!
             failed = true;
             break;
         }
-        else if(rightPos == -2) //Ende erreicht
-        {
+        else if(rightPos == -2) break; //Ende erreicht
 
-        }
 
         if(false /*badgeFound*/){
-                chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
+                //chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
         }else{
             if(true /*!isBadge(horizontalHistogram,leftPos,rightPos)*/){ //Es handelt sich nicht um Bereich der Plaketten
 //                chars[charNo]= binaryImage(Rect(0,leftPos, binaryImage.cols, rightPos-leftPos));
-                chars[charNo]= croppedBinaryImage(Rect(cv::Point(rightPos, 0), cv::Point(rightPos-leftPos, croppedBinaryImage.cols)));
+                //chars[charNo]= croppedBinaryImage(Rect(cv::Point(rightPos, 0), cv::Point(rightPos-leftPos, croppedBinaryImage.cols)));
                 line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
             }else {
                 badgeFound = true;
@@ -67,6 +69,8 @@ Mat* Segmentation::findChars(int *horizontalHistogram, int size)
         }
 
     }
+
+    ImageViewer::viewImage(originalImage, "segmented", 400);
     return chars;
 }
 
@@ -273,7 +277,7 @@ Mat Segmentation::cropImage(const Mat& image){
     Mat horizontalCropped = cropHorizontal(rotated);
 
     // make all blue parts black
-/*    Mat hsvImage;
+    Mat hsvImage;
     cvtColor(horizontalCropped, hsvImage, CV_BGR2HSV);
     MatIterator_<Vec3b> it = hsvImage.begin<Vec3b>();
     MatIterator_<Vec3b> it_end = hsvImage.end<Vec3b>();
@@ -298,7 +302,7 @@ Mat Segmentation::cropImage(const Mat& image){
         }
     }
     cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
-    imshow("blue to black", horizontalCropped);*/
+    imshow("blue to black", horizontalCropped);
 
 
     //Shearing
