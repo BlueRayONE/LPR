@@ -14,10 +14,10 @@ public:
     Segmentation(const cv::Mat& image);
     ~Segmentation();
 
-    int* computeHorizontalHistogram(const cv::Mat& image);
+    int* computeHorizontalHistogram(const cv::Mat& image, NiblackVersion version);
     int* computeVerticalHistogram(const cv::Mat& image);
-    cv::Mat cropHorizontal(const cv::Mat& image);
-    cv::Mat cropImage(const cv::Mat& image);
+    cv::Mat cropHorizontal(const cv::Mat& binaryImage);
+    cv::Mat cropImage(const cv::Mat& binaryImage);
     cv::Mat* findChars(int *horizontalHistogram, int size);
 
 
@@ -36,6 +36,9 @@ private:
     int getVerticalEnd(const cv::Mat& image);
     int getHorizontalStart(const cv::Mat& image);
     int getHorizontalEnd(const cv::Mat& image);
+    double computeSlope(const cv::Mat& image, bool horizontal);
+    cv::Mat rotate(const cv::Mat& toRotate);
+    bool isInInterval(int value, std::pair<int,int> interval);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
