@@ -2,6 +2,7 @@
 #include "ui_mainwindow.h"
 #include "localisation.h"
 #include "segmentation.h"
+#include "licencePlateRecognition.hpp"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -78,6 +79,11 @@ void MainWindow::on_btn_localize_clicked()
     if(ui->radio_pca->isChecked())
     {
 
+		licencePlateRecognition a = licencePlateRecognition();
+		cv::Mat imgX = originalImage.clone();
+		//cv::Mat imgY = originalImage.clone();
+
+		cv::Mat Plate = a.letTheMagicHappen(imgX);
     }
     else if(ui->radio_mser->isChecked())
     {
