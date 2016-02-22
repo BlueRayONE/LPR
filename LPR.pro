@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     Wavelet.cpp \
     segmentation.cpp \
     binarizewolfjolion.cpp \
-    MSER.cpp
+    MSER.cpp \
+    licencePlateRecognition.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
@@ -30,7 +31,8 @@ HEADERS  += mainwindow.h \
     Wavelet.h \
     segmentation.h \
     binarizewolfjolion.h \
-    MSER.h
+    MSER.h \
+    licencePlateRecognition.hpp
 
 FORMS    += mainwindow.ui
 
@@ -62,6 +64,7 @@ unix {
             -lopencv_core \
             -lopencv_highgui \
             -lopencv_imgproc \
-            -lopencv_imgcodecs
+            -lopencv_imgcodecs \ 
+            -lopencv_features2d
     QMAKE_CXXFLAGS_WARN_ON = -Wno-unused-variable -Wno-reorder
 }
