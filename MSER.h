@@ -17,10 +17,11 @@
 class MSER
 {
 public:
-	MSER();
+	MSER(cv::Mat imgOrig);
 	~MSER();
-	std::vector<cv::Rect> run(cv::Mat img);
+	std::vector<cv::Rect> run();
 private:
+	cv::Mat originalImage;
 	const float MAX_HEIGHT_SCALE = 1.5f;			//
 	const float MAX_WIDTH_SCALE = 2.0f;				// same as MAX_HEIGHT_SCALE but for rect width
 	const float MAX_BBOX_HEIGHT_SCALE = 3.5f;		// 3.0f
@@ -32,13 +33,21 @@ private:
 
 
 	std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
-	std::vector<std::pair<cv::Rect, int>> getInnerElements(std::vector<cv::Rect>, std::vector<cv::Rect>);
+	std::vector<std::pair<cv::Rect, int>> getNumInnerElements(std::vector<cv::Rect>, std::vector<cv::Rect>);
 
 	std::vector<cv::Rect> preDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
 	std::vector<cv::Rect> realDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
 	std::vector<cv::Rect> postDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
 
 	std::tuple<bool, float, float> sameSize(std::vector<cv::Rect> innerElements);
+
+	cv::Rect relaxRect(cv::Rect rect);
+	cv::Mat getROI(cv::Rect rect);
+
+	//member
+	cv::Mat grey, mser_p, mser_m;
+	//only for visualiztation
+	cv::Mat visualize_p, colorP, colorP2, colorP3, colorM, img_bk;
 };
 
 #endif
