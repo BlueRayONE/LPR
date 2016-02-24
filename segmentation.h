@@ -31,14 +31,17 @@ public:
     int findPeak(int *horizontalHistogram, int size, int position);
 
 private:
-    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version);
+    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
     int getVerticalStart(const cv::Mat& image);
     int getVerticalEnd(const cv::Mat& image);
     int getHorizontalStart(const cv::Mat& image);
     int getHorizontalEnd(const cv::Mat& image);
+
     double computeSlope(const cv::Mat& image, bool horizontal);
     cv::Mat rotate(const cv::Mat& toRotate);
     bool isInInterval(int value, std::pair<int,int> interval);
+    cv::Mat equalizeImage(const cv::Mat& image);
+    cv::Mat shear(const cv::Mat& image, double slope);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;

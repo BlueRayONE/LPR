@@ -20,7 +20,8 @@ SOURCES += main.cpp\
     Wavelet.cpp \
     segmentation.cpp \
     binarizewolfjolion.cpp \
-    MSER.cpp
+    MSER.cpp \
+    licencePlateRecognition.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
@@ -30,7 +31,8 @@ HEADERS  += mainwindow.h \
     Wavelet.h \
     segmentation.h \
     binarizewolfjolion.h \
-    MSER.h
+    MSER.h \
+    licencePlateRecognition.hpp
 
 FORMS    += mainwindow.ui
 
