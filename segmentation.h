@@ -18,7 +18,7 @@ public:
     int* computeVerticalHistogram(const cv::Mat& image);
     cv::Mat cropHorizontal(const cv::Mat& binaryImage);
     cv::Mat cropImage(const cv::Mat& binaryImage);
-    static cv::Mat* findChars(const cv::Mat &originalImage);
+    cv::Mat* findChars(const cv::Mat &originalImage);
 
 
     static void segmentationTest(const cv::Mat& testImage);
@@ -26,9 +26,9 @@ public:
 
     cv::Mat originalImage;
 
-    bool isBadge(int *horizontalHistogram, int leftPos, int rightPos);
-    int findValley(int *horizontalHistogram, int size, int position);
-    int findPeak(int *horizontalHistogram, int size, int position);
+    bool isBadge(const cv::Mat& imageSegment);
+    int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
+    int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);
 
 private:
     cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
@@ -43,6 +43,9 @@ private:
     cv::Mat equalizeImage(const cv::Mat& image);
     cv::Mat shear(const cv::Mat& image, double slope);
     int slopeBetweenPoints(std::pair<int,int> p0, std::pair<int,int> p1);
+
+    //utils
+    int* reverseArray(int *arr, int start, int end);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;

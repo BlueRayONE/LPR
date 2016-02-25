@@ -127,5 +127,8 @@ void MainWindow::on_btn_crop_clicked()
 
 void MainWindow::on_btn_segment_clicked()
 {
-    Segmentation::findChars(originalImage);
+    Segmentation segmentation(originalImage);
+
+    cv::Mat croppedImage = segmentation.cropImage(originalImage);
+    segmentation.findChars(croppedImage);
 }
