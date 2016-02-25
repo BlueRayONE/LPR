@@ -56,10 +56,11 @@ Mat* Segmentation::findChars(const cv::Mat& originalImage)
         else if(rightPos == -2) break; //Ende erreicht
 
 
-        if(false /*badgeFound*/){
+        if(/*false*/ badgeFound){
                 //chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
+            line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
         }else{
-            if(true /*!isBadge(horizontalHistogram,leftPos,rightPos)*/){ //Es handelt sich nicht um Bereich der Plaketten
+            if(/*true*/ !segmentation.isBadge(horizontalHistogram,leftPos,rightPos)){ //Es handelt sich nicht um Bereich der Plaketten
 //                chars[charNo]= binaryImage(Rect(0,leftPos, binaryImage.cols, rightPos-leftPos));
                 //chars[charNo]= croppedBinaryImage(Rect(cv::Point(rightPos, 0), cv::Point(rightPos-leftPos, croppedBinaryImage.cols)));
                 line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
@@ -77,6 +78,7 @@ Mat* Segmentation::findChars(const cv::Mat& originalImage)
 bool Segmentation::isBadge(int *horizontalHistogram, int leftPos, int rightPos)
 {
     int peak;
+    int thresholdVal = 15;
     Mat ch1, ch2, ch3;
     vector<Mat> channels(3);
     int valCh1, valCh2, valCh3;
@@ -96,8 +98,8 @@ bool Segmentation::isBadge(int *horizontalHistogram, int leftPos, int rightPos)
     valCh2 = originalImage.rows - countNonZero(ch2.col(peak));
     valCh3 = originalImage.rows - countNonZero(ch3.col(peak));
 
-    if(valCh1 >= 5 || valCh2 >= 5 || valCh3 >= 5){
-        line(originalImage, cv::Point(peak, 0), Point(peak, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA);
+    if(valCh1 >= thresholdVal || valCh2 >= thresholdVal || valCh3 >= thresholdVal){
+        line(originalImage, cv::Point(peak, 0), Point(peak, originalImage.rows), Scalar(0, 255, 0), 1, CV_AA);
         imshow("image with badges", originalImage);
         return true;
     }else{
