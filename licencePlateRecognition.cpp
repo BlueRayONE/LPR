@@ -14,7 +14,7 @@ licencePlateRecognition::~licencePlateRecognition()
 
 
 
-Mat licencePlateRecognition::letTheMagicHappen(Mat src){
+Mat licencePlateRecognition::pca(Mat src){
 
 	Mat smalImg = resizeImg(src);
 
@@ -81,8 +81,7 @@ Mat licencePlateRecognition::letTheMagicHappen(Mat src){
 	mergeResults(c1, c2, c3, dst);
 	//identidy3x30(dst, dst);
 
-	Mat threshh;
-	threshold(dst, threshh, 50, 255, THRESH_BINARY);
+
 	Mat dst2 = dst.clone();
 
 	cvtColor(dst2, dst2, CV_GRAY2BGR);
@@ -90,13 +89,19 @@ Mat licencePlateRecognition::letTheMagicHappen(Mat src){
 	medianBlur(dst2, dst2, 5);
 	dilate(dst2, dst2, Mat());
 
+
+	Mat trashh;
+	Mat trashhgray;
+	cvtColor(dst2, trashhgray, COLOR_BGR2GRAY);
+	threshold(trashhgray, trashh, 40, 255, CV_THRESH_BINARY);// | CV_THRESH_OTSU);
 	//P C A
 	vector<vector<Point>> goodContours;
 
-	goodContours = pca(dst2, 50, 150, 400, 500, 6000);
+	goodContours = pca(dst2, 40, 150, 600, 500, 6000); //------------------------------ Werte für die PCA einstellen
+	// pca(dst2, 50, 150, 400, 500, 6000); 
 	//	 (dst2, 50, 100, 400, 100 besser 150, 6000); gute werte!!
 
-	cv::Mat plate;
+	cv::Mat plate = Mat::zeros(1,1, src.type());
 
 	if (goodContours.size() > 0){
 		//standart nummernschild 520mmx110mm verh.:~4.72
@@ -111,7 +116,8 @@ Mat licencePlateRecognition::letTheMagicHappen(Mat src){
 	cv::imshow("c1", c1);
 	cv::imshow("dst", dst);
 	cv::imshow("dst2", dst2);
-	cv::imshow("threshh", threshh);
+	cv::imshow("trashh", trashh);
+	cv::imshow("trashhgray", trashhgray);
 	cv::imshow("plate", plate);
 
 	return plate;
@@ -388,16 +394,24 @@ double getOrientation(const vector<Point> &pts, Mat &img)
 	//double angle = 0;
 	return angle;
 }
+/**
 
-vector<vector<Point>>  licencePlateRecognition::pca(cv::Mat src, int graytresh, int contourPointsTreshhMin,
-	int contourPointsTreshhMax, int contourAreaTreshhMin, int contourAreaTreshhMax){
+@Param src Image
+@Param graytrash
+@Param contourPointstrashhMin
+@Param contourPointstrashhMax
+@Param contourAreatrashhMin
+@Param contourAreatrashhMax
+*/
+vector<vector<Point>>  licencePlateRecognition::pca(cv::Mat src, int graytrash, int contourPointstrashhMin,
+	int contourPointstrashhMax, int contourAreatrashhMin, int contourAreatrashhMax){
 	// Convert image to grayscale
 	Mat gray;
 	cvtColor(src, gray, COLOR_BGR2GRAY);
 
 	// Convert image to binary
 	Mat bw;
-	threshold(gray, bw, graytresh, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+	threshold(gray, bw, graytrash, 255, CV_THRESH_BINARY);// | CV_THRESH_OTSU);
 	//! [pre-process]
 
 	//! [contours]
@@ -411,12 +425,12 @@ vector<vector<Point>>  licencePlateRecognition::pca(cv::Mat src, int graytresh, 
 	for (size_t i = 0; i < contours.size(); ++i)
 	{
 		// Ignore contours that have too many/less contour points
-		if (contours[i].size() < contourPointsTreshhMin || contourPointsTreshhMax < contours[i].size()) continue;
+		if (contours[i].size() < contourPointstrashhMin || contourPointstrashhMax < contours[i].size()) continue;
 
 		// Calculate the area of each contour
 		double area = contourArea(contours[i]);
 		// Ignore contours that Areas are too small or too large
-		if (area < contourAreaTreshhMin || contourAreaTreshhMax < area) continue;
+		if (area < contourAreatrashhMin || contourAreatrashhMax < area) continue;
 
 		//goodContours.push_back;
 
@@ -517,7 +531,10 @@ int licencePlateRecognition::getBestScore(std::vector<std::vector<double>> data)
 		double max1 = data[i].at(1); //seitenverhäldnis (4.7 perfekt)
 		double max2 = data[i].at(2); //abdeckung zum Rechteck 0-1 da %
 		
-		double score = max1 * max2;
+		double score = max2;
+		if (max1 > 2.0 & max1 < 5.7){
+			score = max1 * max2;
+		}
 		
 		if (maxScore < score){
 			maxScore = score;
@@ -665,7 +682,18 @@ Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
 
 	int threshhold = src.rows/200;
 
-	Mat croppedImage = src(Rect((minX / _scaleFactor) - threshhold, (minY / _scaleFactor) - threshhold, (areaRectX / _scaleFactor) + threshhold * 2, (areaRectY / _scaleFactor) + threshhold * 2));
+	int a = (minX / _scaleFactor) - threshhold;
+	int b = (minY / _scaleFactor) - threshhold;
+	int c = (areaRectX / _scaleFactor) + threshhold * 2;
+	int d = (areaRectY / _scaleFactor) + threshhold * 2;
+
+	if ((minX / _scaleFactor) - threshhold < 0){ a = 0; }
+	if ((minY / _scaleFactor) - threshhold < 0){ b = 0; }
+	if ((areaRectX / _scaleFactor) + threshhold * 2 > src.cols){ c = src.cols; }
+	if ((areaRectY / _scaleFactor) + threshhold * 2 > src.rows){ d = src.rows; }
+
+	Mat croppedImage = src(Rect(a, b, c, d));//(minX / _scaleFactor) - threshhold, (minY / _scaleFactor) - threshhold,
+		//(areaRectX / _scaleFactor) + threshhold * 2, (areaRectY / _scaleFactor) + threshhold * 2));
 
 	return croppedImage;
 }
@@ -683,7 +711,8 @@ Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
 //	//-- Step 1: Detect the keypoints using SURF Detector
 //	int minHessian = 400;
 //
-//	SurfFeatureDetector detector(minHessian);
+//	//SurfFeatureDetector detector(minHessian);
+//	FastFeatureDetector detector(MSER);
 //
 //	std::vector<KeyPoint> keypoints_object, keypoints_scene;
 //
@@ -691,7 +720,7 @@ Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
 //	detector.detect(img_scene, keypoints_scene);
 //
 //	//-- Step 2: Calculate descriptors (feature vectors)
-//	SurfDescriptorExtractor extractor;
+//	//SurfDescriptorExtractor extractor;
 //
 //	Mat descriptors_object, descriptors_scene;
 //

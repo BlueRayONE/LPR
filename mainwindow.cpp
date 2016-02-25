@@ -61,7 +61,7 @@ void MainWindow::enableGUI()
 	ui->btn_crop->setEnabled(true);
 	ui->btn_segment->setEnabled(true);
 
-    ui->radio_mser->setChecked(true);
+    ui->radio_pca->setChecked(true);
 
 
 }
@@ -83,7 +83,7 @@ void MainWindow::on_btn_localize_clicked()
 		cv::Mat imgX = originalImage.clone();
 		//cv::Mat imgY = originalImage.clone();
 
-		cv::Mat Plate = a.letTheMagicHappen(imgX);
+		cv::Mat Plate = a.pca(imgX);
     }
     else if(ui->radio_mser->isChecked())
     {
