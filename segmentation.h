@@ -30,6 +30,9 @@ public:
     int findValley(int *horizontalHistogram, int size, int position);
     int findPeak(int *horizontalHistogram, int size, int position);
 
+    cv::Mat croppedBinaryImage;
+    cv::Mat croppedImage;
+
 private:
     cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
     int getVerticalStart(const cv::Mat& image);
@@ -43,9 +46,6 @@ private:
     cv::Mat equalizeImage(const cv::Mat& image);
     cv::Mat shear(const cv::Mat& image, double slope);
     int slopeBetweenPoints(std::pair<int,int> p0, std::pair<int,int> p1);
-
-    cv::Mat croppedBinaryImage;
-    cv::Mat croppedImage;
 };
 
 #endif // SEGMENTATION_HPP

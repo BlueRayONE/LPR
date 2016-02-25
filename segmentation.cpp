@@ -359,7 +359,7 @@ Mat Segmentation::cropImage(const Mat& image){
         int end = getHorizontalEnd(sheared);
         if(start < end){
             Mat croppedImage = sheared(Rect(start, 0, end-start, horizontalCropped.rows));
-            croppedBinaryImage = computeBinaryImage(croppedImage, WOLFJOLION, 70);
+            cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 70), croppedBinaryImage, CV_GRAY2BGR);
             imshow("Cropped binary image", croppedBinaryImage);
 
             cout << "Nach dem gesamten Cropping" << endl;
