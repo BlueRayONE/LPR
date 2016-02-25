@@ -17,6 +17,10 @@ std::vector<cv::Rect> MSER::run()
 	mser_p = mser_pPair.first;
 	std::vector< cv::Rect > bboxes_p = mser_pPair.second;
 
+	/*auto mser_pPair = this->mserFeature(originalImage, true);
+	mser_p = mser_pPair.first;
+	std::vector< cv::Rect > bboxes_p = mser_pPair.second;*/
+
 	auto mser_mPair = this->mserFeature(grey, false);
 	mser_m = mser_mPair.first;
 	std::vector< cv::Rect > bboxes_m = mser_mPair.second;
@@ -74,6 +78,7 @@ std::vector<cv::Rect> MSER::run()
 	}
 
 
+	ImageViewer::viewImage(grey, "grey", 400);
 	ImageViewer::viewImage(colorP3, "canidate mser_p", 400);
 	ImageViewer::viewImage(mser_p, "response mser_p", 400);
 	ImageViewer::viewImage(colorM, "response mser_m", 400);
@@ -111,7 +116,7 @@ std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool 
 	//double _min_margin=0.003			//ignore too small margin
 	//int _edge_blur_size=5				//blur kernel size
 
-    cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 200, 1.01, 0.003, 5); //all default values
+    cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 100, 1.01, 0.003, 5); //all default values
     ptr->setPass2Only(true);
 
 	mser = cv::Mat(grey.rows, grey.cols, CV_8U, cv::Scalar(0));
@@ -448,8 +453,8 @@ cv::Rect MSER::relaxRect(cv::Rect rect)
 	int w = RELAX_PIXELS;
 	int x = (rect.x - w < 0) ? 0 : rect.x - w;
 	int y = (rect.y - w < 0) ? 0 : rect.y - w;
-	int width = (rect.width + w > originalImage.cols) ? rect.width : rect.width + w;
-	int height = (rect.height + w > originalImage.rows) ? rect.height : rect.height + w;
+	int width = (rect.width + w > originalImage.cols) ? rect.width : rect.width + 2*w;
+	int height = (rect.height + w > originalImage.rows) ? rect.height : rect.height + 2*w;
 	return cv::Rect(x, y, width, height);
 
 }
@@ -460,6 +465,25 @@ cv::Mat MSER::getROI(cv::Rect rect)
 	return originalImage(cv::Rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2));
 }
 
+
+cv::Mat MSER::adjustContrastBrightness(cv::Mat img, double alpha, int beta)
+{
+	cv::Mat res = cv::Mat::zeros(img.size(), img.type());
+
+	/// Do the operation new_image(i,j) = alpha*image(i,j) + beta
+	for (int y = 0; y < img.rows; y++)
+	{
+		for (int x = 0; x < img.cols; x++)
+		{
+			for (int c = 0; c < 3; c++)
+			{
+				res.at<cv::Vec3b>(y, x)[c] = cv::saturate_cast<uchar>(alpha*(img.at<cv::Vec3b>(y, x)[c]) + beta);
+			}
+		}
+	}
+
+	return res;
+}
 
 MSER::~MSER()
 {
