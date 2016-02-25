@@ -37,11 +37,12 @@ private:
     int getHorizontalStart(const cv::Mat& image);
     int getHorizontalEnd(const cv::Mat& image);
 
-    double computeSlope(const cv::Mat& image, bool horizontal);
+    double computeAngle(const cv::Mat& image, bool horizontal);
     cv::Mat rotate(const cv::Mat& toRotate);
     bool isInInterval(int value, std::pair<int,int> interval);
     cv::Mat equalizeImage(const cv::Mat& image);
     cv::Mat shear(const cv::Mat& image, double slope);
+    int slopeBetweenPoints(std::pair<int,int> p0, std::pair<int,int> p1);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
