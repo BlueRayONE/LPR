@@ -20,6 +20,8 @@ public:
 	MSER(cv::Mat imgOrig);
 	~MSER();
 	std::vector<cv::Rect> run();
+    static std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
+	static std::tuple<double, double, double, double> meanStdDev(std::vector<cv::Rect> elems);
 private:
 	cv::Mat originalImage;
 	const float MAX_HEIGHT_SCALE = 1.5f;			//
@@ -32,7 +34,6 @@ private:
 	const uint RELAX_PIXELS = 10;
 
 
-	std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
 	std::vector<std::pair<cv::Rect, int>> getNumInnerElements(std::vector<cv::Rect>, std::vector<cv::Rect>);
 
 	std::vector<cv::Rect> preDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
@@ -50,6 +51,8 @@ private:
 	cv::Mat visualize_p, colorP, colorP2, colorP3, colorM, img_bk;
 
 	cv::Mat adjustContrastBrightness(cv::Mat, double alpha, int beta);
+
+	cv::Mat morph(cv::Mat img);
 };
 
 #endif

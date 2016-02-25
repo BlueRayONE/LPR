@@ -13,6 +13,8 @@ std::vector<cv::Rect> MSER::run()
 	img_bk = originalImage.clone();
 	cv::cvtColor(originalImage, grey, CV_BGR2GRAY);
 
+	//grey = morph(grey);
+
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
 	std::vector< cv::Rect > bboxes_p = mser_pPair.second;
@@ -268,33 +270,43 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 }
 
-
-//returns true if all almost same height and returns avg height, avg width
-std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
+std::tuple<double, double, double, double> MSER::meanStdDev(std::vector<cv::Rect> elems)
 {
 	auto power2 = [](double x) { return x * x; };
 	uint sumWidth = 0;
 	uint sumHeight = 0;
 
-	for (auto rect : innerElements)
+	for (auto rect : elems)
 	{
 		sumWidth += rect.width;
 		sumHeight += rect.height;
 	}
 
-	double meanWidth = 1.0 * sumWidth / innerElements.size();
-	double meanHeight = 1.0 * sumHeight / innerElements.size();
+	double meanWidth = 1.0 * sumWidth / elems.size();
+	double meanHeight = 1.0 * sumHeight / elems.size();
 
 	double sqrSumWidth = 0; double sqrSumHeight = 0;
-	for (auto rect : innerElements)
+	for (auto rect : elems)
 	{
 		sqrSumWidth += power2(rect.width - meanWidth);
 		sqrSumHeight += power2(rect.height - meanHeight);
 	}
 
-	double stdevWidth = std::sqrt(sqrSumWidth / innerElements.size());
-	double stdevHeight = std::sqrt(sqrSumHeight / innerElements.size());
+	double stdevWidth = std::sqrt(sqrSumWidth / elems.size());
+	double stdevHeight = std::sqrt(sqrSumHeight / elems.size());
 
+	return std::make_tuple(meanWidth, meanHeight, stdevWidth, stdevHeight);
+
+}
+
+//returns true if all almost same height and returns avg height, avg width
+std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
+{
+	auto tuple = MSER::meanStdDev(innerElements);
+	double meanWidth = std::get<0>(tuple);
+	double meanHeight = std::get<1>(tuple);
+	double stdevWidth = std::get<2>(tuple);
+	double stdevHeight = std::get<3>(tuple);
 
 	int minHeight = -1; int maxHeight = -1;
 	int minWidth = -1; int maxWidth = -1;
@@ -483,6 +495,18 @@ cv::Mat MSER::adjustContrastBrightness(cv::Mat img, double alpha, int beta)
 	}
 
 	return res;
+}
+
+cv::Mat MSER::morph(cv::Mat img)
+{
+	cv::Mat elemVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1,3));
+	cv::Mat elemHorizontal = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 1));
+	
+	cv::Mat res1, res2;
+	cv::erode(img, res1, elemVertical);
+	cv::erode(res1, res2, elemHorizontal);
+
+	return res2;
 }
 
 MSER::~MSER()
