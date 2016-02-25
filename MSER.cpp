@@ -13,8 +13,6 @@ std::vector<cv::Rect> MSER::run()
 	img_bk = originalImage.clone();
 	cv::cvtColor(originalImage, grey, CV_BGR2GRAY);
 
-	grey = morph(grey);
-
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
 	std::vector< cv::Rect > bboxes_p = mser_pPair.second;
