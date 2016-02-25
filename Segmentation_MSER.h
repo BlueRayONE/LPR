@@ -15,6 +15,7 @@ private:
 	static std::vector<cv::Rect> discardOverlapping(std::vector<cv::Rect> bbox);
 	static std::vector<cv::Rect> discardOutlier(std::vector<cv::Rect> bbox);
 	static cv::Rect relaxRect(cv::Rect rect, int rows, int cols);
+	static cv::Mat morph(cv::Mat img);
 };
 
 #endif // SEGMENTATION_MSER_H

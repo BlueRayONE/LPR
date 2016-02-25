@@ -3,6 +3,31 @@
 const float DIST_TO_MEAN = 2.0f;
 const int RELAX_PIXELS = 2;
 
+cv::Mat src, dst;
+
+int morph_elem = 0;
+int morph_size = 0;
+int x = 0;
+int y = 0;
+int morph_operator = 0;
+int const max_operator = 4;
+int const max_elem = 2;
+int const max_kernel_size = 100;
+
+char* window_name = "Morphology Transformations Demo";
+
+void Morphology_Operations(int, void*)
+{
+	// Since MORPH_X : 2,3,4,5 and 6
+	int operation = morph_operator + 2;
+
+	cv::Mat element = cv::getStructuringElement(morph_elem, cv::Size(src.cols / (x + 1), src.rows / (y + 1)));
+
+	/// Apply the specified morphology operation
+	morphologyEx(src, dst, operation, element);
+	imshow(window_name, dst);
+}
+
 Segmentation_MSER::Segmentation_MSER()
 {
 
@@ -12,6 +37,34 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 {
     cv::Mat grey;
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
+
+	/*src = grey;
+	/// Create window
+	cv::namedWindow(window_name, CV_WINDOW_AUTOSIZE);
+
+	/// Create Trackbar to select Morphology operation
+	cv::createTrackbar("Operator:\n 0: Opening - 1: Closing \n 2: Gradient - 3: Top Hat \n 4: Black Hat", window_name, &morph_operator, max_operator, Morphology_Operations);
+
+	/// Create Trackbar to select kernel type
+	cv::createTrackbar("Element:\n 0: Rect - 1: Cross - 2: Ellipse", window_name,
+		&morph_elem, max_elem,
+		Morphology_Operations);
+
+	/// Create Trackbar to choose kernel size
+	cv::createTrackbar("Kernel size x:\n 2n +1", window_name,
+		&x, max_kernel_size,
+		Morphology_Operations);
+
+	cv::createTrackbar("Kernel size:\n 2n +1", window_name,
+		&y, max_kernel_size,
+		Morphology_Operations);
+
+	/// Default start
+	Morphology_Operations(0, 0);*/
+
+	grey = morph(grey);
+
+	ImageViewer::viewImage(grey, "morphed", 400);
 
     auto mser = MSER::mserFeature(grey, false);
     std::vector<cv::Rect> bbox = mser.second;
@@ -125,6 +178,16 @@ std::vector<cv::Rect> Segmentation_MSER::discardOutlier(std::vector<cv::Rect> bb
 	}
 
 	return res;
+}
+
+cv::Mat Segmentation_MSER::morph(cv::Mat img)
+{
+	cv::Mat morphed;
+	cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(img.cols / 100, img.rows / 60));
+
+	cv::morphologyEx(img, morphed, cv::MORPH_OPEN, element);
+
+	return morphed;
 }
 
 
