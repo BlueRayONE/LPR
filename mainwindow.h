@@ -12,6 +12,7 @@
 
 #include "Wavelet.h"
 #include "MSER.h"
+#include "Segmentation_MSER.h"
 
 
 namespace Ui {
