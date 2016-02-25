@@ -139,7 +139,7 @@ void MainWindow::on_btn_segment_clicked()
         Segmentation segmentation(originalImage);
         cv::Mat cropped = segmentation.cropImage(originalImage);
 
-        Segmentation_MSER::findChars(segmentation.croppedBinaryImage);
+        Segmentation_MSER::findChars(cropped);
     }
 
 }

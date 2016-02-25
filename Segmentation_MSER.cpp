@@ -1,6 +1,6 @@
 #include "Segmentation_MSER.h"
 
-const float DIST_TO_MEAN = 1.0f;
+const float DIST_TO_MEAN = 2.0f;
 const int RELAX_PIXELS = 2;
 
 Segmentation_MSER::Segmentation_MSER()
