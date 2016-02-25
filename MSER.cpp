@@ -13,7 +13,7 @@ std::vector<cv::Rect> MSER::run()
 	img_bk = originalImage.clone();
 	cv::cvtColor(originalImage, grey, CV_BGR2GRAY);
 
-	//grey = morph(grey);
+	grey = morph(grey);
 
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
@@ -80,11 +80,16 @@ std::vector<cv::Rect> MSER::run()
 	}
 
 
-	ImageViewer::viewImage(grey, "grey", 400);
-	ImageViewer::viewImage(colorP3, "canidate mser_p", 400);
-	ImageViewer::viewImage(mser_p, "response mser_p", 400);
-	ImageViewer::viewImage(colorM, "response mser_m", 400);
+	if (DEBUG_LEVEL >= 1)
+	{
+		ImageViewer::viewImage(grey, "grey", 400);
+		ImageViewer::viewImage(colorP3, "canidate mser_p", 400);
+		ImageViewer::viewImage(mser_p, "response mser_p", 400);
+		ImageViewer::viewImage(colorM, "response mser_m", 400);
+	}
+
 	ImageViewer::viewImage(img_bk, "candidates", 400);
+	
 
 	size_t i = 0;
 	for (auto roi : canidates)
@@ -446,7 +451,9 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	for (auto elem : res)
 	{
 		//check if rect is too wide
-		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO && elem.first.width > elem.first.height)
+		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO &&
+			elem.first.width > elem.first.height &&
+			elem.first.width >= elem.first.height * MIN_ASPECT_RATIO)
 		{
 			//and relax borders by RELAX_PIXELS
 			res_flattened.push_back(relaxRect(elem.first));
@@ -465,10 +472,9 @@ cv::Rect MSER::relaxRect(cv::Rect rect)
 	int w = RELAX_PIXELS;
 	int x = (rect.x - w < 0) ? 0 : rect.x - w;
 	int y = (rect.y - w < 0) ? 0 : rect.y - w;
-	int width = (rect.width + w > originalImage.cols) ? rect.width : rect.width + 2*w;
-	int height = (rect.height + w > originalImage.rows) ? rect.height : rect.height + 2*w;
+	int width = (rect.x + rect.width + 2 * w > originalImage.cols) ? originalImage.cols - rect.x : rect.width + 2 * w;
+	int height = (rect.y + rect.height + 2 * w > originalImage.rows) ? originalImage.rows - rect.y : rect.height + 2 * w;
 	return cv::Rect(x, y, width, height);
-
 }
 
 
@@ -499,8 +505,8 @@ cv::Mat MSER::adjustContrastBrightness(cv::Mat img, double alpha, int beta)
 
 cv::Mat MSER::morph(cv::Mat img)
 {
-	cv::Mat elemVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1,3));
-	cv::Mat elemHorizontal = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5, 1));
+	cv::Mat elemVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1,9));
+	cv::Mat elemHorizontal = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 1));
 	
 	cv::Mat res1, res2;
 	cv::erode(img, res1, elemVertical);

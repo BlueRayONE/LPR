@@ -31,7 +31,9 @@ private:
 	const float MAX_PART_OUTLIERS_ALLOWED = 0.15f;	//equals 15 percent outlier
 	const uint MIN_DISTANCE_OUTLIER = 5;			//min distance point to line to be marked as outlier in pixel
 	const float MAX_ASPECT_RATIO = 5.5f;			//eu license plate are 52cm by 11cm --> 52/11 = 4.72727272
+	const float MIN_ASPECT_RATIO = 1.1f;
 	const uint RELAX_PIXELS = 10;
+	const int DEBUG_LEVEL = 1;
 
 
 	std::vector<std::pair<cv::Rect, int>> getNumInnerElements(std::vector<cv::Rect>, std::vector<cv::Rect>);

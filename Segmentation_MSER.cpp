@@ -1,7 +1,7 @@
 #include "Segmentation_MSER.h"
 
 const float DIST_TO_MEAN = 1.0f;
-const int RELAX_PIXELS = 7;
+const int RELAX_PIXELS = 2;
 
 Segmentation_MSER::Segmentation_MSER()
 {
@@ -23,6 +23,8 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 	bbox = Segmentation_MSER::discardOverlapping(bbox);
 	bbox = Segmentation_MSER::discardOutlier(bbox);
 
+	std::sort(bbox.begin(), bbox.end(), [](cv::Rect r1, cv::Rect r2) { return r1.x < r2.x; });
+
 	std::vector<cv::Mat> res;
 	cv::Mat img_bk = img.clone();
 
@@ -30,7 +32,8 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box, grey.rows, grey.cols);
 		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 2);
-		res.push_back(img_bk(relaxedBox));
+		cv::Mat mat = img_bk(relaxedBox);
+		res.push_back(mat);
 	}
 
 	ImageViewer::viewImage(colorM, "mser-", 200);
@@ -44,8 +47,8 @@ cv::Rect Segmentation_MSER::relaxRect(cv::Rect rect, int rows, int cols)
 	int w = RELAX_PIXELS;
 	int x = (rect.x - w < 0) ? 0 : rect.x - w;
 	int y = (rect.y - w < 0) ? 0 : rect.y - w;
-	int width = (rect.width + w > cols) ? rect.width : rect.width + 2 * w;
-	int height = (rect.height + w > rows) ? rect.height : rect.height + 2 * w;
+	int width = (rect.x + rect.width + 2 * w > cols) ? cols - rect.x : rect.width + 2 * w;
+	int height = (rect.y + rect.height + 2 * w > rows) ? rows - rect.y : rect.height + 2 * w;
 	return cv::Rect(x, y, width, height);
 
 }
