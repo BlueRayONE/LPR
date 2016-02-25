@@ -6,12 +6,13 @@ using namespace std::chrono;
 MSER::MSER(cv::Mat imgOrig)
 {
 	originalImage = imgOrig.clone();
+	resizedImage = resizeImg(originalImage);
 }
 
 std::vector<cv::Rect> MSER::run()
 {
-	img_bk = originalImage.clone();
-	cv::cvtColor(originalImage, grey, CV_BGR2GRAY);
+	img_bk = resizedImage.clone();
+	cv::cvtColor(resizedImage, grey, CV_BGR2GRAY);
 
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
@@ -92,7 +93,7 @@ std::vector<cv::Rect> MSER::run()
 	size_t i = 0;
 	for (auto roi : canidates)
 	{
-		ImageViewer::viewImage(roi, "candidate " + std::to_string(i));
+		ImageViewer::viewImage(roi, "candidate " + std::to_string(i), 100);
 		i++;
 	}
 
@@ -470,15 +471,15 @@ cv::Rect MSER::relaxRect(cv::Rect rect)
 	int w = RELAX_PIXELS;
 	int x = (rect.x - w < 0) ? 0 : rect.x - w;
 	int y = (rect.y - w < 0) ? 0 : rect.y - w;
-	int width = (rect.x + rect.width + 2 * w > originalImage.cols) ? originalImage.cols - rect.x : rect.width + 2 * w;
-	int height = (rect.y + rect.height + 2 * w > originalImage.rows) ? originalImage.rows - rect.y : rect.height + 2 * w;
+	int width = (rect.x + rect.width + 2 * w > resizedImage.cols) ? resizedImage.cols - rect.x : rect.width + 2 * w;
+	int height = (rect.y + rect.height + 2 * w > resizedImage.rows) ? resizedImage.rows - rect.y : rect.height + 2 * w;
 	return cv::Rect(x, y, width, height);
 }
 
 
 cv::Mat MSER::getROI(cv::Rect rect)
 {
-	return originalImage(cv::Rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2));
+	return originalImage(cv::Rect(rect.x / scaleFactor, rect.y / scaleFactor, rect.width / scaleFactor, rect.height / scaleFactor));
 }
 
 
@@ -511,6 +512,18 @@ cv::Mat MSER::morph(cv::Mat img)
 	cv::erode(res1, res2, elemHorizontal);
 
 	return res2;
+}
+
+cv::Mat MSER::resizeImg(cv::Mat img)
+{
+	scaleFactor = 1;
+	cv::Mat resizedImg;
+	if (img.cols > 1100)
+	{
+		scaleFactor = 900.0 / img.cols;
+		cv::resize(img, resizedImg, cv::Size(), scaleFactor, scaleFactor, CV_INTER_AREA);
+	}
+	return resizedImg;
 }
 
 MSER::~MSER()

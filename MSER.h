@@ -24,6 +24,7 @@ public:
 	static std::tuple<double, double, double, double> meanStdDev(std::vector<cv::Rect> elems);
 private:
 	cv::Mat originalImage;
+	cv::Mat resizedImage;
 	const float MAX_HEIGHT_SCALE = 1.5f;			//
 	const float MAX_WIDTH_SCALE = 2.0f;				// same as MAX_HEIGHT_SCALE but for rect width
 	const float MAX_BBOX_HEIGHT_SCALE = 3.5f;		// 3.0f
@@ -35,7 +36,7 @@ private:
 	const uint RELAX_PIXELS = 10;
 	const int DEBUG_LEVEL = 1;
 
-
+	cv::Mat resizeImg(cv::Mat img);
 	std::vector<std::pair<cv::Rect, int>> getNumInnerElements(std::vector<cv::Rect>, std::vector<cv::Rect>);
 
 	std::vector<cv::Rect> preDiscardBBoxes_p(std::vector<cv::Rect>, std::vector<cv::Rect>);
@@ -48,6 +49,7 @@ private:
 	cv::Mat getROI(cv::Rect rect);
 
 	//member
+	double scaleFactor;
 	cv::Mat grey, mser_p, mser_m;
 	//only for visualiztation
 	cv::Mat visualize_p, colorP, colorP2, colorP3, colorM, img_bk;
