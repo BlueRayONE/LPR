@@ -1,4 +1,4 @@
-﻿#include "segmentation.h"
+#include "segmentation.h"
 #include "ImageViewer.h"
 #include "binarizewolfjolion.h"
 
@@ -439,7 +439,7 @@ int Segmentation::getHorizontalEnd(const Mat& image){
         }
     }
     delete horizontalHistogram;
-    return indexAtMax - 5;
+    return indexAtMax;
 }
 
 int Segmentation::getVerticalStart(const Mat& image){
