@@ -304,7 +304,8 @@ Makefile*
 *.out
 *.app
 
-###### LaTeX
+
+#LaTeX
 *.aux
 *.glo
 *.idx
@@ -329,15 +330,15 @@ Makefile*
 *.mtc
 *.mtc1
 *.out
+*.nav
+*.snm
+*.tex
+*.vrb
 *.synctex.gz
 *.backup
 *.kate-swp
-
+*.pdf
+*.zip
 # ignore temp files
 *~
-
-*.pdf
-Hauptdokument.run.xml
-
-*.zip
 
