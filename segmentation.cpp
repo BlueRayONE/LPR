@@ -1,4 +1,4 @@
-﻿#include "segmentation.h"
+#include "segmentation.h"
 #include "ImageViewer.h"
 #include "binarizewolfjolion.h"
 
@@ -356,9 +356,9 @@ Mat Segmentation::cropImage(const Mat& image){
         int end = getHorizontalEnd(sheared);
         if(start < end){
             croppedImage = sheared(Rect(start, 0, end-start, horizontalCropped.rows));
-            croppedBinaryImage = computeBinaryImage(croppedImage, WOLFJOLION, 70);
+            cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 70), croppedBinaryImage, CV_GRAY2BGR);
             imshow("Cropped binary image", croppedBinaryImage);
-
+            imshow("Cropped Image", croppedImage);
             cout << "Nach dem gesamten Cropping" << endl;
             return croppedImage;
         } else {
@@ -436,7 +436,7 @@ int Segmentation::getHorizontalEnd(const Mat& image){
         }
     }
     delete horizontalHistogram;
-    return indexAtMax - 5;
+    return indexAtMax;
 }
 
 int Segmentation::getVerticalStart(const Mat& image){

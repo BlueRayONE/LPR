@@ -56,7 +56,7 @@ public:
 	std::vector<double> getFittingRectangleArroundShape(cv::Mat src, std::vector<cv::Point> data);
 	cv::Mat cutPlate(cv::Mat src, std::vector<cv::Point> data);
 
-	cv::Mat letTheMagicHappen(cv::Mat src);
+	cv::Mat pca(cv::Mat src);
 	cv::Mat resizeImg(cv::Mat src);
 
 	//void objectDetectionSURF(cv::Mat object, cv::Mat plate);

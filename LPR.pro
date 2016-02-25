@@ -21,7 +21,8 @@ SOURCES += main.cpp\
     segmentation.cpp \
     binarizewolfjolion.cpp \
     MSER.cpp \
-    licencePlateRecognition.cpp
+    licencePlateRecognition.cpp \
+    Segmentation_MSER.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
@@ -32,7 +33,8 @@ HEADERS  += mainwindow.h \
     segmentation.h \
     binarizewolfjolion.h \
     MSER.h \
-    licencePlateRecognition.hpp
+    licencePlateRecognition.hpp \
+    Segmentation_MSER.h
 
 FORMS    += mainwindow.ui
 

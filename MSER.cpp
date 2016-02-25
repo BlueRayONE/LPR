@@ -6,12 +6,13 @@ using namespace std::chrono;
 MSER::MSER(cv::Mat imgOrig)
 {
 	originalImage = imgOrig.clone();
+	resizedImage = resizeImg(originalImage);
 }
 
 std::vector<cv::Rect> MSER::run()
 {
-	img_bk = originalImage.clone();
-	cv::cvtColor(originalImage, grey, CV_BGR2GRAY);
+	img_bk = resizedImage.clone();
+	cv::cvtColor(resizedImage, grey, CV_BGR2GRAY);
 
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
@@ -78,16 +79,21 @@ std::vector<cv::Rect> MSER::run()
 	}
 
 
-	ImageViewer::viewImage(grey, "grey", 400);
-	ImageViewer::viewImage(colorP3, "canidate mser_p", 400);
-	ImageViewer::viewImage(mser_p, "response mser_p", 400);
-	ImageViewer::viewImage(colorM, "response mser_m", 400);
+	if (DEBUG_LEVEL >= 1)
+	{
+		ImageViewer::viewImage(grey, "grey", 400);
+		ImageViewer::viewImage(colorP3, "canidate mser_p", 400);
+		ImageViewer::viewImage(mser_p, "response mser_p", 400);
+		ImageViewer::viewImage(colorM, "response mser_m", 400);
+	}
+
 	ImageViewer::viewImage(img_bk, "candidates", 400);
+	
 
 	size_t i = 0;
 	for (auto roi : canidates)
 	{
-		ImageViewer::viewImage(roi, "candidate " + std::to_string(i));
+		ImageViewer::viewImage(roi, "candidate " + std::to_string(i), 100);
 		i++;
 	}
 
@@ -268,33 +274,43 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 }
 
-
-//returns true if all almost same height and returns avg height, avg width
-std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
+std::tuple<double, double, double, double> MSER::meanStdDev(std::vector<cv::Rect> elems)
 {
 	auto power2 = [](double x) { return x * x; };
 	uint sumWidth = 0;
 	uint sumHeight = 0;
 
-	for (auto rect : innerElements)
+	for (auto rect : elems)
 	{
 		sumWidth += rect.width;
 		sumHeight += rect.height;
 	}
 
-	double meanWidth = 1.0 * sumWidth / innerElements.size();
-	double meanHeight = 1.0 * sumHeight / innerElements.size();
+	double meanWidth = 1.0 * sumWidth / elems.size();
+	double meanHeight = 1.0 * sumHeight / elems.size();
 
 	double sqrSumWidth = 0; double sqrSumHeight = 0;
-	for (auto rect : innerElements)
+	for (auto rect : elems)
 	{
 		sqrSumWidth += power2(rect.width - meanWidth);
 		sqrSumHeight += power2(rect.height - meanHeight);
 	}
 
-	double stdevWidth = std::sqrt(sqrSumWidth / innerElements.size());
-	double stdevHeight = std::sqrt(sqrSumHeight / innerElements.size());
+	double stdevWidth = std::sqrt(sqrSumWidth / elems.size());
+	double stdevHeight = std::sqrt(sqrSumHeight / elems.size());
 
+	return std::make_tuple(meanWidth, meanHeight, stdevWidth, stdevHeight);
+
+}
+
+//returns true if all almost same height and returns avg height, avg width
+std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
+{
+	auto tuple = MSER::meanStdDev(innerElements);
+	double meanWidth = std::get<0>(tuple);
+	double meanHeight = std::get<1>(tuple);
+	double stdevWidth = std::get<2>(tuple);
+	double stdevHeight = std::get<3>(tuple);
 
 	int minHeight = -1; int maxHeight = -1;
 	int minWidth = -1; int maxWidth = -1;
@@ -434,7 +450,9 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	for (auto elem : res)
 	{
 		//check if rect is too wide
-		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO && elem.first.width > elem.first.height)
+		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO &&
+			elem.first.width > elem.first.height &&
+			elem.first.width >= elem.first.height * MIN_ASPECT_RATIO)
 		{
 			//and relax borders by RELAX_PIXELS
 			res_flattened.push_back(relaxRect(elem.first));
@@ -453,16 +471,15 @@ cv::Rect MSER::relaxRect(cv::Rect rect)
 	int w = RELAX_PIXELS;
 	int x = (rect.x - w < 0) ? 0 : rect.x - w;
 	int y = (rect.y - w < 0) ? 0 : rect.y - w;
-	int width = (rect.width + w > originalImage.cols) ? rect.width : rect.width + 2*w;
-	int height = (rect.height + w > originalImage.rows) ? rect.height : rect.height + 2*w;
+	int width = (rect.x + rect.width + 2 * w > resizedImage.cols) ? resizedImage.cols - rect.x : rect.width + 2 * w;
+	int height = (rect.y + rect.height + 2 * w > resizedImage.rows) ? resizedImage.rows - rect.y : rect.height + 2 * w;
 	return cv::Rect(x, y, width, height);
-
 }
 
 
 cv::Mat MSER::getROI(cv::Rect rect)
 {
-	return originalImage(cv::Rect(rect.x + 1, rect.y + 1, rect.width - 2, rect.height - 2));
+	return originalImage(cv::Rect(rect.x / scaleFactor, rect.y / scaleFactor, rect.width / scaleFactor, rect.height / scaleFactor));
 }
 
 
@@ -483,6 +500,34 @@ cv::Mat MSER::adjustContrastBrightness(cv::Mat img, double alpha, int beta)
 	}
 
 	return res;
+}
+
+cv::Mat MSER::morph(cv::Mat img)
+{
+	cv::Mat elemVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1,9));
+	cv::Mat elemHorizontal = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 1));
+	
+	cv::Mat res1, res2;
+	cv::erode(img, res1, elemVertical);
+	cv::erode(res1, res2, elemHorizontal);
+
+	return res2;
+}
+
+cv::Mat MSER::resizeImg(cv::Mat img)
+{
+	scaleFactor = 1;
+	cv::Mat smallImg;;
+	if (img.cols > 1100)
+	{
+		scaleFactor = 900.0 / img.cols;
+		cv::resize(img, smallImg, cv::Size(), scaleFactor, scaleFactor, CV_INTER_AREA);
+	}
+	else
+	{
+		smallImg = img.clone();
+	}
+	return smallImg;
 }
 
 MSER::~MSER()

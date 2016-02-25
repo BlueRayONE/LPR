@@ -46,7 +46,7 @@ void MainWindow::on_btn_openImage_clicked()
 
            //resizes img to height 800 maintaining aspect ratio
 
-           ImageViewer::viewImage(originalImage, "Original Image", 400);
+           ImageViewer::viewImage(originalImage, "Original Image", 300);
         }
     }
 
@@ -57,11 +57,13 @@ void MainWindow::on_btn_openImage_clicked()
 void MainWindow::enableGUI()
 {
     ui->btn_localize->setEnabled(true);
-	ui->groupBox->setEnabled(true);
+    ui->group_localization->setEnabled(true);
+    ui->group_segmentation->setEnabled(true);
 	ui->btn_crop->setEnabled(true);
 	ui->btn_segment->setEnabled(true);
 
     ui->radio_mser->setChecked(true);
+    ui->radio_projection->setChecked(true);
 
 
 }
@@ -69,7 +71,8 @@ void MainWindow::enableGUI()
 void MainWindow::disableGUI()
 {
     ui->btn_localize->setEnabled(false);
-	ui->groupBox->setEnabled(false);
+    ui->group_localization->setEnabled(false);
+    ui->group_segmentation->setEnabled(false);
 	ui->btn_crop->setEnabled(false);
 	ui->btn_segment->setEnabled(false);
 }
@@ -83,7 +86,7 @@ void MainWindow::on_btn_localize_clicked()
 		cv::Mat imgX = originalImage.clone();
 		//cv::Mat imgY = originalImage.clone();
 
-		cv::Mat Plate = a.letTheMagicHappen(imgX);
+		cv::Mat Plate = a.pca(imgX);
     }
     else if(ui->radio_mser->isChecked())
     {
@@ -127,8 +130,17 @@ void MainWindow::on_btn_crop_clicked()
 
 void MainWindow::on_btn_segment_clicked()
 {
-    Segmentation segmentation(originalImage);
+    if(ui->radio_projection->isChecked())
+    {
+            Segmentation segmentation(originalImage);
 
-    cv::Mat croppedImage = segmentation.cropImage(originalImage);
-    segmentation.findChars(croppedImage);
+            cv::Mat croppedImage = segmentation.cropImage(originalImage);
+            segmentation.findChars(croppedImage);
+    }
+    else
+    {
+        //Segmentation segmentation(originalImage);
+        //cv::Mat cropped = segmentation.cropImage(originalImage);
+        Segmentation_MSER::findChars(originalImage);
+    }
 }
