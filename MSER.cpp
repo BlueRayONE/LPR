@@ -517,13 +517,17 @@ cv::Mat MSER::morph(cv::Mat img)
 cv::Mat MSER::resizeImg(cv::Mat img)
 {
 	scaleFactor = 1;
-	cv::Mat resizedImg;
+	cv::Mat smallImg;;
 	if (img.cols > 1100)
 	{
 		scaleFactor = 900.0 / img.cols;
-		cv::resize(img, resizedImg, cv::Size(), scaleFactor, scaleFactor, CV_INTER_AREA);
+		cv::resize(img, smallImg, cv::Size(), scaleFactor, scaleFactor, CV_INTER_AREA);
 	}
-	return resizedImg;
+	else
+	{
+		smallImg = img.clone();
+	}
+	return smallImg;
 }
 
 MSER::~MSER()

@@ -20,7 +20,20 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 	cv::Mat colorM;
 	cvtColor(mser_m, colorM, CV_GRAY2RGB);
 
+	for (auto box : bbox)
+	{
+		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box, grey.rows, grey.cols);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 0, 255), 1);
+	}
+
 	bbox = Segmentation_MSER::discardOverlapping(bbox);
+
+	for (auto box : bbox)
+	{
+		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box, grey.rows, grey.cols);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 1);
+	}
+
 	bbox = Segmentation_MSER::discardOutlier(bbox);
 
 	std::sort(bbox.begin(), bbox.end(), [](cv::Rect r1, cv::Rect r2) { return r1.x < r2.x; });
@@ -31,7 +44,7 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box, grey.rows, grey.cols);
-		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 2);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 0), 2);
 		cv::Mat mat = img_bk(relaxedBox);
 		res.push_back(mat);
 	}
