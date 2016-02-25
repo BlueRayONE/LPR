@@ -87,8 +87,8 @@ void MainWindow::on_btn_localize_clicked()
     }
     else if(ui->radio_mser->isChecked())
     {
-		MSER* m = new MSER();
-		locatedCandidates = m->run(originalImage);
+		MSER m =  MSER(originalImage);
+		locatedCandidates = m.run();
     }
     else
     {
