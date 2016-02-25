@@ -8,5 +8,12 @@ void ImageViewer::viewImage(const cv::Mat img, std::string title, int height)
         cv::resizeWindow(title, height*img.cols/img.rows, height);
     else
         cv::resizeWindow(title, img.cols, img.rows);
+
+	/*int k = cv::waitKey(0);
+
+	if (k == 's')
+		cv::imwrite(title + ".jpg", img);
+	else
+		return;*/
 }
 

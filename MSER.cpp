@@ -3,42 +3,53 @@
 
 using namespace std::chrono;
 
-MSER::MSER()
+MSER::MSER(cv::Mat imgOrig)
 {
+	originalImage = imgOrig.clone();
+	resizedImage = resizeImg(originalImage);
 }
 
-
-cv::Mat global;
-
-std::vector<cv::Rect> MSER::run(cv::Mat imgOrig)
+std::vector<cv::Rect> MSER::run()
 {
-	cv::Mat img, grey, mser_p, mser_m, img_bk;
-	img = imgOrig.clone();
-	cv::cvtColor(img, grey, CV_BGR2GRAY);
-	img_bk = img.clone();
+	img_bk = resizedImage.clone();
+	cv::cvtColor(resizedImage, grey, CV_BGR2GRAY);
 
 	auto mser_pPair = this->mserFeature(grey, true);
 	mser_p = mser_pPair.first;
 	std::vector< cv::Rect > bboxes_p = mser_pPair.second;
 
+	/*auto mser_pPair = this->mserFeature(originalImage, true);
+	mser_p = mser_pPair.first;
+	std::vector< cv::Rect > bboxes_p = mser_pPair.second;*/
+
 	auto mser_mPair = this->mserFeature(grey, false);
 	mser_m = mser_mPair.first;
 	std::vector< cv::Rect > bboxes_m = mser_mPair.second;
 
-	auto bboxes_p_pre = preDiscardBBoxes_p(bboxes_p, bboxes_m);
-
-
-	cv::Mat colorP;
 	cvtColor(mser_p, colorP, CV_GRAY2RGB);
+	colorP2 = colorP.clone();
+	colorP3 = colorP.clone();
 
-	for (auto rect : bboxes_p_pre)
+
+	for (auto rect : bboxes_p)
 	{
 		cv::rectangle(colorP, rect, cv::Scalar(0, 0, 255), 1);
 	}
 
-	global = colorP;
+	auto bboxes_p_pre = preDiscardBBoxes_p(bboxes_p, bboxes_m);
 
+
+
+
+	for (auto rect : bboxes_p_pre)
+	{
+		cv::rectangle(colorP2, rect, cv::Scalar(0, 0, 255), 1);
+	}
+
+
+	visualize_p = colorP2;
 	auto bboxes_p_real = realDiscardBBoxes_p(bboxes_p_pre, bboxes_m);
+	visualize_p = colorP3;
 	auto bboxes_p_post = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); 
 
 	//TODO: real candidate overlapped by false canidate which has more inner elements f.ex. shadows or edges
@@ -50,22 +61,17 @@ std::vector<cv::Rect> MSER::run(cv::Mat imgOrig)
 
 	for (auto rect : bboxes_p_real)
 	{
-		int w = RELAX_PIXELS;
-		int x = (rect.x - w < 0) ? 0 : rect.x - w;
-		int y = (rect.y - w < 0) ? 0 : rect.y - w;
-
-		cv::rectangle(colorP, cv::Rect(x, y, rect.width + w, rect.height + w), cv::Scalar(0, 255, 255), 1);
-		cv::rectangle(img, cv::Rect(x, y, rect.width + w, rect.height + w), cv::Scalar(0, 255, 255), 1);
+		cv::rectangle(colorP3, relaxRect(rect), cv::Scalar(0, 255, 255), 1);
+		cv::rectangle(img_bk, relaxRect(rect), cv::Scalar(0, 255, 255), 1);
 	}
 
 	for (auto rect : bboxes_p_post)
 	{
-		cv::rectangle(colorP, rect, cv::Scalar(0, 255, 0), 1);
-		cv::rectangle(img, rect, cv::Scalar(0, 255, 0), 1);
-		canidates.push_back(img_bk(rect));
+		cv::rectangle(colorP3, rect, cv::Scalar(0, 255, 0), 1);
+		cv::rectangle(img_bk, rect, cv::Scalar(0, 255, 0), 1);
+		canidates.push_back(getROI(rect));
 	}
 
-	cv::Mat colorM;
 	cvtColor(mser_m, colorM, CV_GRAY2RGB);
 	for (cv::Rect rect : bboxes_m)
 	{
@@ -73,15 +79,21 @@ std::vector<cv::Rect> MSER::run(cv::Mat imgOrig)
 	}
 
 
-	ImageViewer::viewImage(colorP, "canidate mser_p", 400);
-	ImageViewer::viewImage(mser_p, "response mser_p", 400);
-	ImageViewer::viewImage(colorM, "response mser_m", 400);
-	ImageViewer::viewImage(img, "candidates", 400);
+	if (DEBUG_LEVEL >= 1)
+	{
+		ImageViewer::viewImage(grey, "grey", 400);
+		ImageViewer::viewImage(colorP3, "canidate mser_p", 400);
+		ImageViewer::viewImage(mser_p, "response mser_p", 400);
+		ImageViewer::viewImage(colorM, "response mser_m", 400);
+	}
+
+	ImageViewer::viewImage(img_bk, "candidates", 400);
+	
 
 	size_t i = 0;
 	for (auto roi : canidates)
 	{
-		ImageViewer::viewImage(roi, "candidate " + std::to_string(i));
+		ImageViewer::viewImage(roi, "candidate " + std::to_string(i), 100);
 		i++;
 	}
 
@@ -110,7 +122,7 @@ std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool 
 	//double _min_margin=0.003			//ignore too small margin
 	//int _edge_blur_size=5				//blur kernel size
 
-    cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 200, 1.01, 0.003, 5); //all default values
+    cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 100, 1.01, 0.003, 5); //all default values
     ptr->setPass2Only(true);
 
 	mser = cv::Mat(grey.rows, grey.cols, CV_8U, cv::Scalar(0));
@@ -136,7 +148,7 @@ std::pair< cv::Mat, std::vector<cv::Rect>> MSER::mserFeature(cv::Mat grey, bool 
 
 std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
 {
-	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getInnerElements(boxes_p, boxes_v);
+	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getNumInnerElements(boxes_p, boxes_v);
 
 	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
@@ -182,21 +194,21 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	std::vector<cv::Rect> res;
 	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
-	cv::Mat reset = global.clone();
+	cv::Mat reset_vis = visualize_p.clone();
 
 	for (auto rect_p : boxes_p)
 	{
 		std::vector<cv::Rect> innerElements;
 		std::vector<cv::Point2f> centerPoints;
-		global = reset.clone();
-		cv::rectangle(global, rect_p, cv::Scalar(255, 0, 0), 1);
+		visualize_p = reset_vis.clone();
+		cv::rectangle(visualize_p, rect_p, cv::Scalar(255, 0, 0), 1);
 		for (auto rect_v : boxes_v)
 		{
 			if (intersectArea(rect_p, rect_v) == rect_v.area()) //rect_v completely in rect_p
 			{
 				innerElements.push_back(rect_v);
 				centerPoints.push_back(cv::Point2f(rect_v.x + rect_v.width / 2, (rect_v.y + rect_v.height / 2)));
-				cv::rectangle(global, rect_v, cv::Scalar(0, 255, 0), 1);
+				cv::rectangle(visualize_p, rect_v, cv::Scalar(0, 255, 0), 1);
 			}
 		}
 
@@ -206,7 +218,7 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 		cv::Vec4f line;
 		cv::fitLine(centerPoints, line, CV_DIST_HUBER, 0, 0.01, 0.01);
 		float x0 = line[2];	float y0 = line[3]; float dx = line[0]; float dy = line[1];
-		cv::line(global, cv::Point(x0 + dx * -1000, y0 + dy * -1000), cv::Point(x0 + dx * 1000, y0 + dy * 1000), cv::Scalar(255, 255, 0), 1);
+		cv::line(visualize_p, cv::Point(x0 + dx * -1000, y0 + dy * -1000), cv::Point(x0 + dx * 1000, y0 + dy * 1000), cv::Scalar(255, 255, 0), 1);
 
 		//STEP 1.1: check angle
 		float angle = std::atan2(dy, dx);
@@ -236,7 +248,7 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 		for (auto rect : inlierRects)
 		{
-			cv::rectangle(global, rect, cv::Scalar(0, 255, 255), 1);
+			cv::rectangle(visualize_p, rect, cv::Scalar(0, 255, 255), 1);
 		}
 
 	
@@ -257,38 +269,48 @@ std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 	}
 
-	global = reset.clone();
+	visualize_p = reset_vis.clone();
 	return res;
 
 }
 
-
-//returns true if all almost same height and returns avg height, avg width
-std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
+std::tuple<double, double, double, double> MSER::meanStdDev(std::vector<cv::Rect> elems)
 {
 	auto power2 = [](double x) { return x * x; };
 	uint sumWidth = 0;
 	uint sumHeight = 0;
 
-	for (auto rect : innerElements)
+	for (auto rect : elems)
 	{
 		sumWidth += rect.width;
 		sumHeight += rect.height;
 	}
 
-	double meanWidth = 1.0 * sumWidth / innerElements.size();
-	double meanHeight = 1.0 * sumHeight / innerElements.size();
+	double meanWidth = 1.0 * sumWidth / elems.size();
+	double meanHeight = 1.0 * sumHeight / elems.size();
 
 	double sqrSumWidth = 0; double sqrSumHeight = 0;
-	for (auto rect : innerElements)
+	for (auto rect : elems)
 	{
 		sqrSumWidth += power2(rect.width - meanWidth);
 		sqrSumHeight += power2(rect.height - meanHeight);
 	}
 
-	double stdevWidth = std::sqrt(sqrSumWidth / innerElements.size());
-	double stdevHeight = std::sqrt(sqrSumHeight / innerElements.size());
+	double stdevWidth = std::sqrt(sqrSumWidth / elems.size());
+	double stdevHeight = std::sqrt(sqrSumHeight / elems.size());
 
+	return std::make_tuple(meanWidth, meanHeight, stdevWidth, stdevHeight);
+
+}
+
+//returns true if all almost same height and returns avg height, avg width
+std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElements)
+{
+	auto tuple = MSER::meanStdDev(innerElements);
+	double meanWidth = std::get<0>(tuple);
+	double meanHeight = std::get<1>(tuple);
+	double stdevWidth = std::get<2>(tuple);
+	double stdevHeight = std::get<3>(tuple);
 
 	int minHeight = -1; int maxHeight = -1;
 	int minWidth = -1; int maxWidth = -1;
@@ -331,7 +353,7 @@ std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElement
 }
 
 
-std::vector<std::pair<cv::Rect, int>> MSER::getInnerElements(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
+std::vector<std::pair<cv::Rect, int>> MSER::getNumInnerElements(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
 {
 	std::vector<std::pair<cv::Rect, int>> rectInnerElements;
 
@@ -361,7 +383,12 @@ std::vector<std::pair<cv::Rect, int>> MSER::getInnerElements(std::vector<cv::Rec
 
 std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
 {
-	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getInnerElements(boxes_p, boxes_v);
+	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getNumInnerElements(boxes_p, boxes_v);
+
+	for (auto elem : boxes_p)
+	{
+		cv::rectangle(visualize_p, relaxRect(elem), cv::Scalar(0, 255, 255), 1);
+	}
 
 	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
@@ -369,18 +396,18 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
 	res.push_back(rectInnerElements[0]);
 
-	cv::Mat reset = global.clone();
+	cv::Mat reset_vis = visualize_p.clone();
 
 	for (size_t i = 1; i < rectInnerElements.size(); i++)
 	{
 		auto elem1 = rectInnerElements[i];
 		bool intersect = false;
-		global = reset.clone();
-		cv::rectangle(global, elem1.first, cv::Scalar(0, 255, 0), 1);
+		visualize_p = reset_vis.clone();
+		cv::rectangle(visualize_p, relaxRect(elem1.first), cv::Scalar(0, 255, 0), 1);
 		for (size_t j = 0; j < res.size(); j++)
 		{
 			auto elem2 = res[j];
-			cv::rectangle(global, elem2.first, cv::Scalar(255, 255, 0), 1);
+			cv::rectangle(visualize_p, relaxRect(elem2.first), cv::Scalar(255, 255, 0), 1);
 
 			if (intersectArea(elem1.first, elem2.first) == elem2.first.area())
 			{
@@ -423,25 +450,97 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	for (auto elem : res)
 	{
 		//check if rect is too wide
-		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO && elem.first.width > elem.first.height)
+		if (elem.first.width <= elem.first.height * MAX_ASPECT_RATIO &&
+			elem.first.width > elem.first.height &&
+			elem.first.width >= elem.first.height * MIN_ASPECT_RATIO)
 		{
 			//and relax borders by RELAX_PIXELS
-			int w = RELAX_PIXELS;
-			int x = (elem.first.x - w < 0) ? 0 : elem.first.x - w;
-			int y = (elem.first.y - w < 0) ? 0 : elem.first.y - w;
-			res_flattened.push_back(cv::Rect(x, y, elem.first.width + w, elem.first.height + w));
+			res_flattened.push_back(relaxRect(elem.first));
 		}
 			
 
 	}
-		
 
 	return res_flattened;
 
 }
 
 
+cv::Rect MSER::relaxRect(cv::Rect rect)
+{
+	int w = RELAX_PIXELS;
+	int x = (rect.x - w < 0) ? 0 : rect.x - w;
+	int y = (rect.y - w < 0) ? 0 : rect.y - w;
+	int width = (rect.x + rect.width + 2 * w > resizedImage.cols) ? resizedImage.cols - rect.x : rect.width + 2 * w;
+	int height = (rect.y + rect.height + 2 * w > resizedImage.rows) ? resizedImage.rows - rect.y : rect.height + 2 * w;
+	return cv::Rect(x, y, width, height);
+}
+
+
+cv::Mat MSER::getROI(cv::Rect rect)
+{
+	return originalImage(cv::Rect(rect.x / scaleFactor, rect.y / scaleFactor, rect.width / scaleFactor, rect.height / scaleFactor));
+}
+
+
+cv::Mat MSER::adjustContrastBrightness(cv::Mat img, double alpha, int beta)
+{
+	cv::Mat res = cv::Mat::zeros(img.size(), img.type());
+
+	/// Do the operation new_image(i,j) = alpha*image(i,j) + beta
+	for (int y = 0; y < img.rows; y++)
+	{
+		for (int x = 0; x < img.cols; x++)
+		{
+			for (int c = 0; c < 3; c++)
+			{
+				res.at<cv::Vec3b>(y, x)[c] = cv::saturate_cast<uchar>(alpha*(img.at<cv::Vec3b>(y, x)[c]) + beta);
+			}
+		}
+	}
+
+	return res;
+}
+
+cv::Mat MSER::morph(cv::Mat img)
+{
+	cv::Mat elemVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1,9));
+	cv::Mat elemHorizontal = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 1));
+	
+	cv::Mat res1, res2;
+	cv::erode(img, res1, elemVertical);
+	cv::erode(res1, res2, elemHorizontal);
+
+	return res2;
+}
+
+cv::Mat MSER::resizeImg(cv::Mat img)
+{
+	scaleFactor = 1;
+	cv::Mat smallImg;;
+	if (img.cols > 1100)
+	{
+		scaleFactor = 900.0 / img.cols;
+		cv::resize(img, smallImg, cv::Size(), scaleFactor, scaleFactor, CV_INTER_AREA);
+	}
+	else
+	{
+		smallImg = img.clone();
+	}
+	return smallImg;
+}
 
 MSER::~MSER()
 {
+	//do not release originalImage because ROIs are References?
+	grey.release();
+	mser_p.release();
+	mser_m.release();
+
+	visualize_p.release();
+	colorP.release();
+	colorP2.release();
+	colorP3.release();
+	colorM.release();
+	img_bk.release();
 }

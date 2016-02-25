@@ -1,4 +1,4 @@
-﻿#include "segmentation.h"
+#include "segmentation.h"
 #include "ImageViewer.h"
 #include "binarizewolfjolion.h"
 
@@ -8,6 +8,7 @@
 //#include <tesseract/ocrclass.h>
 
 #define PI 3.14159265
+#define WINDOW_SIZE 45
 
 using namespace cv;
 using namespace std;
@@ -19,47 +20,50 @@ Segmentation::~Segmentation(){
 
 }
 
-Mat* Segmentation::findChars(int *horizontalHistogram, int size)
+Mat* Segmentation::findChars(const cv::Mat& originalImage)
 {
+    Segmentation segmentation(originalImage);
+
     Mat* chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
     int leftPos  = 0;
     int rightPos = 0;
     int tmpPos = 0;
     bool badgeFound = false;
     bool failed = false;
+    int size = originalImage.cols;
+    cv::Mat image = originalImage.clone();
+
+    int* horizontalHistogram = segmentation.computeHorizontalHistogram(image, WOLFJOLION);
 
     for(int charNo=0; charNo<10; charNo++){
         if(rightPos >= size) break;
 
         leftPos = rightPos; // End of prev elem is start of new elem
-        tmpPos=findPeak(horizontalHistogram,size,leftPos); //Peak des nächsten Elements finden
+        tmpPos=segmentation.findPeak(horizontalHistogram,size,leftPos); //Peak des nächsten Elements finden
 
         if(tmpPos == -1){ //Keinen Peak gefunden!!
             failed = true;
             break;
         }
-        else if(tmpPos == -2) //Ende erreicht
-        {
+        else if(tmpPos == -2) break;//Ende erreicht
 
-        }
 
-        rightPos=findValley(horizontalHistogram,size,tmpPos) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
+        rightPos=segmentation.findValley(horizontalHistogram,size,tmpPos) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
 
         if(rightPos == -1){ //Keinen Valley gefunden!!
             failed = true;
             break;
         }
-        else if(rightPos == -2) //Ende erreicht
-        {
+        else if(rightPos == -2) break; //Ende erreicht
 
-        }
 
-        if(false /*badgeFound*/){
-                chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
+        if(/*false*/ badgeFound){
+                //chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
+            line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
         }else{
-            if(true /*!isBadge(horizontalHistogram,leftPos,rightPos)*/){ //Es handelt sich nicht um Bereich der Plaketten
+            if(/*true*/ !segmentation.isBadge(horizontalHistogram,leftPos,rightPos)){ //Es handelt sich nicht um Bereich der Plaketten
 //                chars[charNo]= binaryImage(Rect(0,leftPos, binaryImage.cols, rightPos-leftPos));
-                chars[charNo]= croppedBinaryImage(Rect(cv::Point(rightPos, 0), cv::Point(rightPos-leftPos, croppedBinaryImage.cols)));
+                //chars[charNo]= croppedBinaryImage(Rect(cv::Point(rightPos, 0), cv::Point(rightPos-leftPos, croppedBinaryImage.cols)));
                 line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
             }else {
                 badgeFound = true;
@@ -67,12 +71,15 @@ Mat* Segmentation::findChars(int *horizontalHistogram, int size)
         }
 
     }
+
+    ImageViewer::viewImage(originalImage, "segmented", 400);
     return chars;
 }
 
 bool Segmentation::isBadge(int *horizontalHistogram, int leftPos, int rightPos)
 {
     int peak;
+    int thresholdVal = 15;
     Mat ch1, ch2, ch3;
     vector<Mat> channels(3);
     int valCh1, valCh2, valCh3;
@@ -92,8 +99,8 @@ bool Segmentation::isBadge(int *horizontalHistogram, int leftPos, int rightPos)
     valCh2 = originalImage.rows - countNonZero(ch2.col(peak));
     valCh3 = originalImage.rows - countNonZero(ch3.col(peak));
 
-    if(valCh1 >= 5 || valCh2 >= 5 || valCh3 >= 5){
-        line(originalImage, cv::Point(peak, 0), Point(peak, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA);
+    if(valCh1 >= thresholdVal || valCh2 >= thresholdVal || valCh3 >= thresholdVal){
+        line(originalImage, cv::Point(peak, 0), Point(peak, originalImage.rows), Scalar(0, 255, 0), 1, CV_AA);
         imshow("image with badges", originalImage);
         return true;
     }else{
@@ -139,9 +146,12 @@ int Segmentation::findPeak(int *horizontalHistogram, int size, int position)
     return result;
 }
 
+int Segmentation::slopeBetweenPoints(pair<int,int> p0, pair<int,int> p1){
+    return (p1.second - p0.second) / (p1.first - p0.first);
+}
 
-double Segmentation::computeSlope(const Mat& image, bool horizontal){
-    Mat binaryImage = computeBinaryImage(image, WOLFJOLION);
+double Segmentation::computeAngle(const Mat& image, bool horizontal){
+    Mat binaryImage = computeBinaryImage(image, WOLFJOLION, WINDOW_SIZE);
 
     Mat dst, cdst;
     // Parameters must be optimized
@@ -150,42 +160,82 @@ double Segmentation::computeSlope(const Mat& image, bool horizontal){
     vector<Vec4i> lines;
 
     int minLinLength, threshold;
-    if(horizontal == true){
+    if(horizontal){
         threshold = 100;
-        minLinLength = 1/3 * cdst.cols;
+        minLinLength = 1/2 * cdst.cols;
     } else {
-        threshold = cdst.rows * (75.0/119);
+        threshold = cdst.rows * 0.5;
         minLinLength = 1/3 * cdst.rows;
     }
     // Parameters must be optimized
-    HoughLinesP(dst, lines, 1, CV_PI/180, threshold, minLinLength, 15);
+    HoughLinesP(dst, lines, 1, CV_PI/180, threshold, minLinLength, 20);
 
+    int lineIndex = 0;
+    double angle = 0;
     double maxLength = 0;
-    double slope = 0;
-    for(size_t i = 0; i < lines.size(); i++) {
-        Vec4i l = lines[i];
-        line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
+    bool found = false;
 
-        double currentLength = sqrt(pow((l[0] - l[2]), 2) + pow((l[1] - l[3]), 2));
-        if(currentLength > maxLength){
-            maxLength = currentLength;
-            slope = (double)(l[3] - l[1]) / (l[2] - l[0]);
+    if(horizontal){
+        // default angle
+        angle = 0;
+        for(size_t i = 0; i < lines.size(); i++) {
+            Vec4i l = lines[i];
+            line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
+
+            double currentSlope = (double)(l[3] - l[1]) / (l[2] - l[0]);
+            double currentAngle = atan(currentSlope) * 180/PI;
+            double currentLength = sqrt(pow((l[0] - l[2]), 2) + pow((l[1] - l[3]), 2));
+
+            if((currentLength > maxLength) && (abs(currentAngle) <= 45)){
+                maxLength = currentLength;
+                lineIndex = i;
+                angle = currentAngle;
+                found = true;
+            }
+        }
+        } else {
+        // default angle
+        angle = 90;
+        for(size_t i = 0; i < lines.size(); i++) {
+            Vec4i l = lines[i];
+            line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(0,0,255), 3, CV_AA);
+
+            double currentSlope = (double)(l[3] - l[1]) / (l[2] - l[0]);
+            double currentAngle = atan(currentSlope) * 180/PI;
+            double currentLength = sqrt(pow((l[0] - l[2]), 2) + pow((l[1] - l[3]), 2));
+
+            if((currentLength > maxLength) && (abs(currentAngle) > 45)){
+                maxLength = currentLength;
+                lineIndex = i;
+                angle = currentAngle;
+                found = true;
+            }
+
         }
     }
 
-    imshow("detected lines", cdst);
-    return slope;
+
+    if(found){
+        Vec4i l = lines[lineIndex];
+        line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,0,0), 3, CV_AA);
+    }
+
+    if(horizontal)
+        imshow("Detect horizontal lines", cdst);
+    else
+        imshow("Detect vertical lines", cdst);
+
+    return angle;
 }
 
 Mat Segmentation::rotate(const cv::Mat& toRotate){
-    double slope = computeSlope(toRotate, true);
+    double angle = computeAngle(toRotate, true);
 
-    double angle = atan(slope) * 180/PI;
     Point2f pt(toRotate.cols/2., toRotate.rows/2.);
     Mat r = getRotationMatrix2D(pt, angle, 1.0);
     Mat rotated = Mat(toRotate.rows, toRotate.cols, toRotate.type());
     warpAffine(toRotate, rotated, r, Size(toRotate.cols, toRotate.rows), INTER_LINEAR, BORDER_CONSTANT, Scalar(255,255,255));
-    cout << "arctan(" << slope << ") = " << angle << " degree " << endl;
+    cout << "angle: " << angle << endl;
     return rotated;
 }
 
@@ -194,17 +244,16 @@ void Segmentation::segmentationTest(const cv::Mat& testImage){
 
     Mat croppedImage = segmentation.cropImage(testImage);
     ImageViewer::viewImage(croppedImage, "Cropped Image");
+    //imshow("my binary", segmentation.computeBinaryImage(testImage, WOLFJOLION));
 }
 
-Mat Segmentation::computeBinaryImage(Mat image, NiblackVersion version){
-    Mat greyImage, image8bit;
+Mat Segmentation::computeBinaryImage(Mat image, NiblackVersion version, int windowSize){
+    Mat greyImage;
 
     cvtColor(image, greyImage, CV_BGR2GRAY);
-    greyImage.convertTo(image8bit, CV_8UC1);
     Mat binaryImage(greyImage.rows, greyImage.cols, CV_8UC1);
 
-    int window = 10;
-    NiblackSauvolaWolfJolion(greyImage, binaryImage, version, window, window, 0.5, 128);
+    NiblackSauvolaWolfJolion(greyImage, binaryImage, version, windowSize, windowSize, 0.5, 128);
     return binaryImage;
 }
 
@@ -212,12 +261,15 @@ Mat Segmentation::cropHorizontal(const Mat& image){
     int start = getVerticalStart(image);
     int end = getVerticalEnd(image);
 
-    Mat horizontalCropped = image(Rect(0,start, image.cols, end-start));
-    return horizontalCropped;
+    if(start < end){
+        Mat horizontalCropped = image(Rect(0, start, image.cols, end-start));
+        return horizontalCropped;
+    } else
+        return image;
 }
 
-Mat Segmentation::cropImage(const Mat& image){
-    // Histogram Equalization of Color image
+
+Mat Segmentation::equalizeImage(const Mat& image){
     vector<Mat> channels;
     Mat equalizedImage;
     cvtColor(image, equalizedImage, CV_BGR2YCrCb); //change the color image from BGR to YCrCb format
@@ -226,69 +278,105 @@ Mat Segmentation::cropImage(const Mat& image){
     merge(channels,equalizedImage); //merge 3 channels including the modified 1st channel into one image
     cvtColor(equalizedImage, equalizedImage, CV_YCrCb2BGR); //change the color image from YCrCb to BGR format (to display image properly)
 
-    imshow("equalized", equalizedImage);
+    return equalizedImage;
+}
 
-    // First, filter the image to sharpen the edges and remove noise
+Mat Segmentation::shear(const Mat& image, double slope){
+    Mat warpedImage = Mat(image.rows, image.cols, image.type());
+    Mat shearMat = (Mat_<double>(3,3) << 1, -1/slope, 0, 0, 1, 0, 0, 0, 1);
+    Size size(image.cols, image.rows);
+    warpPerspective(image, warpedImage, shearMat, size);
+
+    return warpedImage;
+}
+
+Mat Segmentation::cropImage(const Mat& image){
+    // Histogram Equalization of Color image
+    Mat equalizedImage = equalizeImage(image);
+    cout << "Nach equalization" << endl;
+
+    // Filter the image to sharpen the edges and remove noise
     Mat filteredImage = Mat(equalizedImage.rows, equalizedImage.cols, equalizedImage.type());
     bilateralFilter(image, filteredImage, 9, 100, 1000);
+    cout << "Nach dem Filtern" << endl;
 
+    // Rotate the image
     Mat rotated = rotate(filteredImage);
-    imshow("Rotated", rotated);
+    imshow("Rotiert", rotated);
+    cout << "Nach dem Rotieren" << endl;
+    imshow("Nach dem Rotieren", computeBinaryImage(rotated, WOLFJOLION, WINDOW_SIZE));
+
+
+    // Crop horizontal
     Mat horizontalCropped = cropHorizontal(rotated);
-    imshow("horizontalCropped", horizontalCropped);
+    cout << "Nach dem horizontal cropping" << endl;
+    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
+    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
 
-    cout << horizontalCropped.rows << ", " << horizontalCropped.cols << endl;
 
-    if(horizontalCropped.rows == 0 && horizontalCropped.cols == 0){
+    if(horizontalCropped.rows != 0 && horizontalCropped.cols != 0){
+        imshow("Rotated horizontal cropped", horizontalCropped);
+
+        // make all blue parts black
+        Mat hsvImage;
+        cvtColor(horizontalCropped, hsvImage, CV_BGR2HSV);
+        MatIterator_<Vec3b> it = hsvImage.begin<Vec3b>();
+        MatIterator_<Vec3b> it_end = hsvImage.end<Vec3b>();
+        for(; it != it_end; ++it){
+            // work with pixel in here, e.g.:
+            Vec3b& pixel = *it; // reference to pixel in image
+            int hue = pixel[0];
+            int saturation = pixel[1];
+            int value = pixel[2];
+
+            pair<int,int> h, s, v;
+            h.first = 90;
+            h.second = 130;
+            s.first = 40/100.0 * 255;
+            s.second = 255;
+            v.first = 50/100.0 * 255;
+            v.second = 255;
+
+            if(isInInterval(hue,h) && isInInterval(saturation,s) && isInInterval(value,v)){
+                //make it black
+                pixel[2] = 0;
+            }
+        }
+        cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
+        imshow("blue to black", horizontalCropped);
+        cout << "Nach dem Schwarzmachen" << endl;
+
+
+        double angle = computeAngle(horizontalCropped, false);
+        double slope = tan(angle*PI/180);
+        Mat sheared = shear(horizontalCropped, slope);
+        imshow("Sheared", sheared);
+        cout << "Nach dem Scheren" << endl;
+
+
+        // Crop at the left and right side
+        int start = getHorizontalStart(sheared);
+        int end = getHorizontalEnd(sheared);
+        if(start < end){
+            Mat croppedImage = sheared(Rect(start, 0, end-start, horizontalCropped.rows));
+            cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 70), croppedBinaryImage, CV_GRAY2BGR);
+            imshow("Cropped binary image", croppedBinaryImage);
+            imshow("Cropped Image", croppedImage);
+
+            cout << "Nach dem gesamten Cropping" << endl;
+            return croppedImage;
+        } else {
+            croppedBinaryImage = computeBinaryImage(sheared, WOLFJOLION, 60);
+            imshow("Cropped binary image", croppedBinaryImage);
+
+            return sheared;
+        }
+
+    } else {
         cerr << "Horizontal cropping failed" << endl;
     }
 
-    // make all blue parts black
-    Mat hsvImage;
-    cvtColor(horizontalCropped, hsvImage, CV_BGR2HSV);
-    MatIterator_<Vec3b> it = hsvImage.begin<Vec3b>();
-    MatIterator_<Vec3b> it_end = hsvImage.end<Vec3b>();
-    for(; it != it_end; ++it){
-        // work with pixel in here, e.g.:
-        Vec3b& pixel = *it; // reference to pixel in image
-        int hue = pixel[0];
-        int saturation = pixel[1];
-        int value = pixel[2];
-
-        pair<int,int> h, s, v;
-        h.first = 100;
-        h.second = 130;
-        s.first = 4.0/10 * 255;
-        s.second = 255;
-        v.first = 6.0/10 *255;
-        v.second = 255;
-
-        if(isInInterval(hue,h) && isInInterval(saturation,s) && isInInterval(value,v)){
-            //make it black
-            pixel[2] = 0;
-        }
-    }
-    cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
-    imshow("blue to black", horizontalCropped);
-
-
-    //Shearing
-    double slope = computeSlope(horizontalCropped, false);
-    Mat warpedImage = Mat(horizontalCropped.rows, horizontalCropped.cols, horizontalCropped.type());
-    Mat shearMat = (Mat_<double>(3,3) << 1, -1/slope, 0, 0, 1, 0, 0, 0, 1);
-    Size size(horizontalCropped.cols, horizontalCropped.rows);
-    warpPerspective(horizontalCropped, warpedImage, shearMat, size);
-    //imshow("Sheared", warpedImage);
-
-    imshow("wo ist die linie", computeBinaryImage(warpedImage, WOLFJOLION));
-
-    int start = getHorizontalStart(warpedImage);
-    int end = getHorizontalEnd(warpedImage);
-    Mat croppedImage = warpedImage(Rect(start, 0, end-start, horizontalCropped.rows));
-    croppedBinaryImage = computeBinaryImage(croppedImage, WOLFJOLION);
-    imshow("WOLF", croppedBinaryImage);
-
-    return croppedImage;
+    return image;
 }
 
 
@@ -330,7 +418,7 @@ int Segmentation::getHorizontalStart(const Mat& image){
     }
     delete horizontalHistogram;
     cout << maxValue << " at index " << indexAtMax << endl;
-    return indexAtMax + 10;
+    return indexAtMax + 5;
 }
 
 int Segmentation::getHorizontalEnd(const Mat& image){
@@ -352,7 +440,7 @@ int Segmentation::getHorizontalEnd(const Mat& image){
         }
     }
     delete horizontalHistogram;
-    return indexAtMax - 10;
+    return indexAtMax;
 }
 
 int Segmentation::getVerticalStart(const Mat& image){
@@ -361,87 +449,102 @@ int Segmentation::getVerticalStart(const Mat& image){
     writeIntoFile(verticalHistogram, image.rows, "Vertical.txt");
     //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
 
-    int offset = 1;
-    int borderThickness = 5;
     int height = image.rows;
     int middle = height/2;
     int startIndex = middle;
 
-    int sum = 0;
-    int interval = height*0.15;
-    for(int i = -interval; i < interval; i++){
-        sum += verticalHistogram[middle+i];
-    }
-    int threshold = sum/(interval*2) * 0.5;
+    // must be dynamic (7 seems to be a good factor)
+    int threshold = image.cols / 7;
 
     // start from the middle row and search till the first row
-    for(int i = middle; i >= 0; i--){
-        int current = verticalHistogram[i];
+    int maximum = verticalHistogram[startIndex];
+    bool found = false;
+    int i = 1;
+    while(!found){
+        int currentValue = verticalHistogram[startIndex - i];
 
-        if(current < threshold){
-            int candidate = i;
-            // number of successor that have to be under the threshold
-            bool isStart = true;
-            for(int j = candidate - 1; j >= candidate - offset; j--){
-
-                if(verticalHistogram[j] > threshold){
-                    isStart = false;
+        if(currentValue < maximum){
+            int diff = maximum - currentValue;
+            if(diff >= threshold){
+                found = true;
+                int index = startIndex - i;
+                int currentMin = verticalHistogram[index];
+                int neighborMin = verticalHistogram[index - 1];
+                while(neighborMin < currentMin){
+                    index = index - 1;
+                    currentMin = verticalHistogram[index];
+                    neighborMin = verticalHistogram[index - 1];
                 }
+                startIndex = index;
             }
-            if(isStart){
-                startIndex = candidate - borderThickness;
-                return startIndex;
-            }
+            i++;
+        } else {
+            maximum = currentValue;
+            startIndex = startIndex - i;
+            i = 1;
         }
     }
+
     delete verticalHistogram;
-    return startIndex;
+    if(isInInterval(startIndex, pair<int,int>(0, image.rows-1)))
+        return startIndex;
+    else
+        return 0;
 }
 
 int Segmentation::getVerticalEnd(const Mat& image){
     int* verticalHistogram = computeVerticalHistogram(image);
+    //very important: don't mix cols with rows -> bad results
+    writeIntoFile(verticalHistogram, image.rows, "Vertical.txt");
+    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
 
-    int offset = 1;
-    int borderThickness = 5;
-    int length = image.rows;
-    int middle = length/2;
+    int height = image.rows;
+    int middle = height/2;
     int endIndex = middle;
 
-    int sum = 0;
-    int interval = length*0.15;
-    for(int i = -interval; i < interval; i++){
-        sum += verticalHistogram[middle+i];
-    }
-    int threshold = sum/(interval*2) * 0.5;
+    // must be dynamic
+    int threshold = image.cols / 7;
 
-    //start from the middle row and seach till the end row
-    for(int i = middle; i < length; i++){
-        int current = verticalHistogram[i];
+    // start from the middle row and search till the first row
+    int maximum = verticalHistogram[endIndex];
+    bool found = false;
+    int i = 1;
+    while(!found){
+        int currentValue = verticalHistogram[endIndex + i];
 
-        if(current < threshold){
-            int candidate = i;
-            // number of successor that have to be under the threshold
-            bool isEnd = true;
-
-            for(int j = candidate + 1; j < candidate + offset; j++){
-                if(verticalHistogram[j] > threshold){
-                    isEnd = false;
+        if(currentValue < maximum){
+            int diff = maximum - currentValue;
+            if(diff >= threshold){
+                found = true;
+                int index = endIndex + i;
+                int currentMin = verticalHistogram[index];
+                int neighborMin = verticalHistogram[index + 1];
+                while(neighborMin < currentMin){
+                    index = index + 1;
+                    currentMin = verticalHistogram[index];
+                    neighborMin = verticalHistogram[index + 1];
                 }
+                endIndex = index;
             }
-            if(isEnd){
-                endIndex = candidate + borderThickness;
-                return endIndex;
-            }
+            i++;
+        } else {
+            maximum = currentValue;
+            endIndex = endIndex + i;
+            i = 1;
         }
     }
+
     delete verticalHistogram;
-    return endIndex;
+    if(isInInterval(endIndex, pair<int,int>(0, image.rows-1)))
+        return endIndex;
+    else
+        return 0;
 }
 
 int* Segmentation::computeHorizontalHistogram(const Mat& image, NiblackVersion version){
     int width = image.cols;
     int height = image.rows;
-    Mat binaryImage = computeBinaryImage(image, version);
+    Mat binaryImage = computeBinaryImage(image, version, WINDOW_SIZE);
 
     int* histogram = new int[width];
     for(int i = 0; i < width; i++){
@@ -453,7 +556,7 @@ int* Segmentation::computeHorizontalHistogram(const Mat& image, NiblackVersion v
 int* Segmentation::computeVerticalHistogram(const Mat& image){
     int width = image.cols;
     int height = image.rows;
-    Mat binaryImage = computeBinaryImage(image, WOLFJOLION);
+    Mat binaryImage = computeBinaryImage(image, WOLFJOLION, WINDOW_SIZE);
     //imshow("wolfilein", binaryImage);
 
     int* histogram = new int[height];
