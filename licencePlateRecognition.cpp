@@ -120,6 +120,16 @@ Mat licencePlateRecognition::pca(Mat src){
 	cv::imshow("trashhgray", trashhgray);
 	cv::imshow("plate", plate);
 
+
+	//imwrite("Ausarbeitung/PCA/DSC03001/c3.jpg", c3);
+	//imwrite("Ausarbeitung/PCA/DSC03001/c2.jpg", c2);
+	//imwrite("Ausarbeitung/PCA/DSC03001/c1.jpg", c1);
+	//imwrite("Ausarbeitung/PCA/DSC03001/dst.jpg", dst);
+	//imwrite("Ausarbeitung/PCA/DSC03001/dst2.jpg", dst2);
+	//imwrite("Ausarbeitung/PCA/DSC03001/trashh.jpg", trashh);
+	//imwrite("Ausarbeitung/PCA/DSC03001/trashhgray.jpg", trashhgray);
+	//imwrite("Ausarbeitung/PCA/DSC03001/plate.jpg", plate);
+
 	return plate;
 }
 
