@@ -37,6 +37,8 @@ private slots:
 
     void on_btn_segment_clicked();
 
+    void on_btn_recognize_clicked();
+
 private:
     Ui::MainWindow *ui;
     void enableGUI();

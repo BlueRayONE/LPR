@@ -140,9 +140,10 @@ void MainWindow::on_btn_segment_clicked()
     }
     else
     {
-        //Segmentation segmentation(originalImage);
-        //cv::Mat cropped = segmentation.cropImage(originalImage);
-        Segmentation_MSER::findChars(originalImage);
+        Segmentation segmentation(originalImage);
+        cv::Mat cropped = segmentation.cropImage(originalImage);
+        //Segmentation_MSER::findChars(originalImage);
+        Segmentation_MSER::findChars(cropped);
     }
 }
 
