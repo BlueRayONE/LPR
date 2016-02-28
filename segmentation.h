@@ -29,12 +29,12 @@ public:
     bool isBadge(const cv::Mat& imageSegment);
     int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
     int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);
+    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
 
 private:
-    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
     int getVerticalStart(const cv::Mat& image);
     int getVerticalEnd(const cv::Mat& image);
     int getHorizontalStart(const cv::Mat& image);
