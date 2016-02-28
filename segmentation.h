@@ -22,16 +22,16 @@ public:
 
 
     static void segmentationTest(const cv::Mat& testImage);
-    static void writeIntoFile(int* array, int length, std::string filename);
-
     cv::Mat originalImage;
 
     bool isBadge(const cv::Mat& imageSegment);
+    int findChange(int *horizontalHistogram, int start, int maxPos);
     int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
     int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
+    cv::Mat* chars; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
 
 private:
     cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
@@ -49,6 +49,7 @@ private:
     //utils
     int* reverseArray(int *arr, int start, int end);
     bool isInInterval(int value, std::pair<int,int> interval);
+    void plotArray(int* array, int length, std::string filename, bool rm, bool view);
 };
 
 #endif // SEGMENTATION_HPP
