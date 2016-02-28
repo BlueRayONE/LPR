@@ -1,7 +1,10 @@
 #include "Segmentation_MSER.h"
 
 const float DIST_TO_MEAN = 2.0f;
-const int RELAX_PIXELS = 2;
+const int RELAX_PIXELS_VERT = 10;
+const int RELAX_PIXELS_HOR = 5;
+const float MAX_ALLOWED_HEIGHT_DEV = 0.3f; //30 percent
+const float MAX_ALLOWED_WIDTH_DEV = 0.75f; //40 percent
 
 cv::Mat src, dst;
 
@@ -62,9 +65,9 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 	/// Default start
 	Morphology_Operations(0, 0);*/
 
-	grey = morph(grey);
+	//grey = morph(grey);
 
-	ImageViewer::viewImage(grey, "morphed", 400);
+	//ImageViewer::viewImage(grey, "morphed", 400);
 
     auto mser = MSER::mserFeature(grey, false);
     std::vector<cv::Rect> bbox = mser.second;
@@ -108,13 +111,53 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
     return res;
 }
 
+std::pair< cv::Mat, std::vector<cv::Rect>> Segmentation_MSER::mserFeature(cv::Mat grey)
+{
+
+	//int _delta=5						//how many different gray levels does a region need to be stable to be considered max stable
+	//int _min_area=60					//reject too small
+	//int _max_area=14400				//or too big areas		--> could be small in order to get rid of too big candidates
+	//double _max_variation=0.25		//or too big variance	--> should stay small to get many bbox for same object --> robust line fit
+
+	//next args only apply for color image
+	//double _min_diversity=.2			//or too similar
+	//int _max_evolution=200			//evolution steps
+	//double _area_threshold=1.01		//threshold to cause re-init
+	//double _min_margin=0.003			//ignore too small margin
+	//int _edge_blur_size=5				//blur kernel size
+	//cv::bitwise_not(grey, grey);
+
+	cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 100, 1.01, 0.003, 5); //all default values
+	ptr->setPass2Only(true);
+
+	cv::Mat mser = cv::Mat(grey.rows, grey.cols, CV_8U, cv::Scalar(0));
+
+
+	std::vector< std::vector< cv::Point > > msers;
+	std::vector< cv::Rect > bboxes;
+
+	ptr->detectRegions(grey, msers, bboxes);
+
+	for (std::vector<cv::Point> v : msers)
+	{
+		for (cv::Point pt : v)
+		{
+			mser.at<uchar>(pt) = 255;
+		}
+	}
+
+	return std::make_pair(mser, bboxes);
+
+}
+
 cv::Rect Segmentation_MSER::relaxRect(cv::Rect rect, int rows, int cols)
 {
-	int w = RELAX_PIXELS;
-	int x = (rect.x - w < 0) ? 0 : rect.x - w;
-	int y = (rect.y - w < 0) ? 0 : rect.y - w;
-	int width = (rect.x + rect.width + 2 * w > cols) ? cols - rect.x : rect.width + 2 * w;
-	int height = (rect.y + rect.height + 2 * w > rows) ? rows - rect.y : rect.height + 2 * w;
+	int w_x = RELAX_PIXELS_HOR;
+	int w_y = RELAX_PIXELS_VERT;
+	int x = (rect.x - w_x < 0) ? 0 : rect.x - w_x;
+	int y = (rect.y - w_y < 0) ? 0 : rect.y - w_y;
+	int width = (rect.x + rect.width + 2 * w_x > cols) ? cols - rect.x : rect.width + 2 * w_x;
+	int height = (rect.y + rect.height + 2 * w_y > rows) ? rows - rect.y : rect.height + 2 * w_y;
 	return cv::Rect(x, y, width, height);
 
 }
@@ -138,12 +181,12 @@ std::vector<cv::Rect> Segmentation_MSER::discardOverlapping(std::vector<cv::Rect
 			if (intersectArea(elem1, elem2) == elem1.area())
 			{
 				intersect = true;
-				res[j] = elem2;
+				res[j] = elem1;
 			}
 			else if (intersectArea(elem1, elem2) == elem2.area())
 			{
 				intersect = true;
-				res[j] = elem1;
+				res[j] = elem2;
 			}
 		}
 
@@ -158,23 +201,21 @@ std::vector<cv::Rect> Segmentation_MSER::discardOutlier(std::vector<cv::Rect> bb
 {
 	std::vector<cv::Rect> res;
 
-	auto tuple = MSER::meanStdDev(bbox);
-	double meanWidth = std::get<0>(tuple);
-	double meanHeight = std::get<1>(tuple);
-	double stdevWidth = std::get<2>(tuple);
-	double stdevHeight = std::get<3>(tuple);
+	std::sort(bbox.begin(), bbox.end(), [](cv::Rect r1, cv::Rect r2) { return r1.height < r2.height; });
+	cv::Rect medianHeight = bbox[bbox.size() / 2];
+	std::sort(bbox.begin(), bbox.end(), [](cv::Rect r1, cv::Rect r2) { return r1.width < r2.width; });
+	cv::Rect medianWidth = bbox[bbox.size() / 2];
 
+
+	double rightBoundary0 = medianHeight.height + medianHeight.height * MAX_ALLOWED_HEIGHT_DEV;
+	double leftBoundary0 = medianHeight.height - medianHeight.height * MAX_ALLOWED_HEIGHT_DEV;
+	double rightBoundary1 = medianWidth.width + medianWidth.width * MAX_ALLOWED_WIDTH_DEV;
+	double leftBoundary1 = medianWidth.width - medianWidth.width * MAX_ALLOWED_WIDTH_DEV;
 	for (auto box : bbox)
 	{
-		float leftBoundary0 = meanHeight - DIST_TO_MEAN * stdevHeight;
-		float rightBoundary0 = meanHeight + DIST_TO_MEAN * stdevHeight;
-		float leftBoundary1 = meanWidth - DIST_TO_MEAN* stdevWidth;
-		float rightBoundary1 = meanWidth + DIST_TO_MEAN * stdevWidth;
-
-		if (leftBoundary0 < box.height && box.height < rightBoundary0 && leftBoundary1 < box.width && box.width < rightBoundary1)
-		{
-			res.push_back(box);
-		}
+		if (box.height >= leftBoundary0 && box.height <= rightBoundary0 &&
+			box.width >= leftBoundary1 && box.width <= rightBoundary1)
+		res.push_back(box);
 	}
 
 	return res;

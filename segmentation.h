@@ -28,13 +28,13 @@ public:
     int findChange(int *horizontalHistogram, int start, int maxPos);
     int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
     int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);
+    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
 
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
     cv::Mat* chars; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
 
 private:
-    cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
     int getVerticalStart(const cv::Mat& image);
     int getVerticalEnd(const cv::Mat& image);
     int getHorizontalStart(const cv::Mat& image);

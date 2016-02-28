@@ -677,7 +677,6 @@ float Wavelet::rectRank(cv::Mat img, cv::Rect rect)
 
 	for (int j = tl.x; j < tl.x + rect.width; j++)
 	{
-		;
 		for (int i = tl.y; i < tl.y + rect.height; i++)
 		{
 			int val = img.at<uchar>(i, j);
