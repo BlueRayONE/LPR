@@ -3,6 +3,7 @@
 #include "localisation.h"
 #include "segmentation.h"
 #include "licencePlateRecognition.hpp"
+#include "classification.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -136,10 +137,8 @@ void MainWindow::on_btn_segment_clicked()
     }
     else
     {
-        //Segmentation segmentation(originalImage);
-        //cv::Mat cropped = segmentation.cropImage(originalImage);
-
-        Segmentation_MSER::findChars(originalImage);
+        Classification classification;
+        classification.characterRecognition(originalImage);
     }
 
 }
