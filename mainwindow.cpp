@@ -87,7 +87,7 @@ void MainWindow::on_btn_localize_clicked()
 		cv::Mat imgX = originalImage.clone();
 		//cv::Mat imgY = originalImage.clone();
 
-		cv::Mat Plate = a.letTheMagicHappen(imgX);
+		cv::Mat Plate = a.pca(imgX);
     }
     else if(ui->radio_mser->isChecked())
     {
@@ -133,12 +133,23 @@ void MainWindow::on_btn_segment_clicked()
 {
     if(ui->radio_projection->isChecked())
     {
-        Segmentation::findChars(originalImage);
+            Segmentation segmentation(originalImage);
+
+            cv::Mat croppedImage = segmentation.cropImage(originalImage);
+            segmentation.findChars(croppedImage);
     }
     else
     {
-        Classification classification;
-        classification.characterRecognition(originalImage);
+        //Segmentation segmentation(originalImage);
+        //cv::Mat cropped = segmentation.cropImage(originalImage);
+        Segmentation_MSER::findChars(originalImage);
     }
+}
 
+
+
+void MainWindow::on_btn_recognize_clicked()
+{
+    Classification classification;
+    classification.characterRecognition(originalImage);
 }

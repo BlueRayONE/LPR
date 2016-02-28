@@ -16,6 +16,7 @@ private:
 	static std::vector<cv::Rect> discardOutlier(std::vector<cv::Rect> bbox);
 	static cv::Rect relaxRect(cv::Rect rect, int rows, int cols);
 	static cv::Mat morph(cv::Mat img);
+	static std::pair< cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey);
 };
 
 #endif // SEGMENTATION_MSER_H
