@@ -20,9 +20,8 @@ public:
     cv::Mat cropImage(const cv::Mat& binaryImage);
     cv::Mat* findChars(const cv::Mat &originalImage);
 
-    static void writeIntoFile(int* array, int length, std::string filename);
-
     bool isBadge(const cv::Mat& imageSegment);
+    int findChange(int *horizontalHistogram, int start, int maxPos);
     int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
     int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);
     cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
@@ -31,6 +30,7 @@ public:
     std::string name;
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
+    cv::Mat* chars; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
 
 private:
     int getVerticalStart(const cv::Mat& image);
@@ -42,11 +42,13 @@ private:
     cv::Mat rotate(const cv::Mat& toRotate);
     cv::Mat equalizeImage(const cv::Mat& image);
     cv::Mat shear(const cv::Mat& image, double slope);
-    int slopeBetweenPoints(std::pair<int,int> p0, std::pair<int,int> p1);
 
     //utils
     int* reverseArray(int *arr, int start, int end);
     bool isInInterval(int value, std::pair<int,int> interval);
+    void plotArray(int* array, int length, std::string filename, bool rm, bool view);
+    int slopeBetweenPoints(std::pair<int,int> p0, std::pair<int,int> p1);
+
 };
 
 #endif // SEGMENTATION_HPP

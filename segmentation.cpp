@@ -22,7 +22,7 @@ Segmentation::~Segmentation(){
 
 Mat* Segmentation::findChars(const cv::Mat& originalImage)
 {
-    Mat* chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
+    chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
     int leftPos  = 0;
     int rightPos = 0;
     int tmpPos = 0;
@@ -33,8 +33,10 @@ Mat* Segmentation::findChars(const cv::Mat& originalImage)
 
     int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
 
+    plotArray(horizontalHistogram, image.cols, "horizontalFULL.txt",false,true);
+
     for(int charNo=0; charNo<10; charNo++){
-        if(rightPos >= size) break;
+        if(rightPos >= size-10) break;
 
         leftPos = rightPos; // End of prev elem is start of new elem
         tmpPos=findPeak(horizontalHistogram,size,leftPos,30); //Peak des nächsten Elements finden
@@ -48,24 +50,32 @@ Mat* Segmentation::findChars(const cv::Mat& originalImage)
 
         rightPos=findValley(horizontalHistogram,size,tmpPos,3) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
 
-        if(rightPos == -1){ //Keinen Valley gefunden!!
+        if(rightPos == -1){ //Kein Valley gefunden!!
             failed = true;
             break;
         }
         else if(rightPos == -2) break; //Ende erreicht
 
-        cout << "Leftpos: " << leftPos << "; Rightpos: " << rightPos << endl;
-
-        if(/*false */ badgeFound){
-                //chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.cols)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
+        if(badgeFound){
+            chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.rows)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
             line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
         }else{
-            if(/*true*/ !isBadge(croppedImage(Rect(leftPos, 0, rightPos-leftPos, croppedImage.rows))) || charNo == 2){ //Es handelt sich nicht um Bereich der Plaketten
-                //chars[charNo]= croppedBinaryImage(Rect(rightPos, 0, rightPos-leftPos, croppedBinaryImage.cols));
+            if(!isBadge(croppedImage(Rect(leftPos, 0, rightPos-leftPos, croppedImage.rows)))){ //Es handelt sich nicht um Bereich der Plaketten
+                chars[charNo]= croppedBinaryImage(Rect(rightPos, 0, rightPos-leftPos, croppedBinaryImage.rows));
                 line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
+                tmpPos = findChange(horizontalHistogram,leftPos+2,rightPos);
+                if((tmpPos-leftPos) > 30){ //ist Plakette bei Binärisierung gefiltert worden? Dann gibts ne große weiße Lücke!
+                    badgeFound = true;
+                    rightPos = tmpPos-5;
+                    line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Leerraums einzeichnen
+                    line(originalImage, cv::Point((leftPos+((tmpPos-leftPos)/2)), 0), cv::Point((leftPos+((tmpPos-leftPos)/2)), originalImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge markieren
+
+                }
             }else {
                 badgeFound = true;
                 line(originalImage, cv::Point((leftPos+((rightPos-leftPos)/2)), 0), cv::Point((leftPos+((rightPos-leftPos)/2)), originalImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge markieren
+                rightPos=findValley(horizontalHistogram,size,tmpPos,3) + 2;
+                line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
             }
         }
 
@@ -77,32 +87,42 @@ Mat* Segmentation::findChars(const cv::Mat& originalImage)
 
 bool Segmentation::isBadge(const cv::Mat& imageSegment)
 {
-    int* verticalHistogram = computeVerticalHistogram(imageSegment); //Bild von oben nach unten
+    int* verticalHistogram = computeVerticalHistogram(imageSegment); //Bild von oben nach unten    
 
-    cout << "reverseArrrrrray: " << endl;
-    cout << "first: " << verticalHistogram[0] << "; last: " << verticalHistogram[imageSegment.rows-1] << endl;
     verticalHistogram = reverseArray(verticalHistogram, 0,imageSegment.rows-1); //jetzt von unten nach oben
-    cout << "first: " << verticalHistogram[0] << "; last: " << verticalHistogram[imageSegment.rows-1] << endl;
+    plotArray(verticalHistogram, imageSegment.rows, "badgeProj.txt",false,true);
 
-    int point1 = findPeak(verticalHistogram,0,imageSegment.rows-1,2);
+    int point1 = findPeak(verticalHistogram,imageSegment.rows-1,0,3);
     if(point1 > 0) //evtl -1 od. -2 wenn nix gefunden wurde
-        point1 = findValley(verticalHistogram,point1,imageSegment.rows-1,2);
+        point1 = findValley(verticalHistogram,imageSegment.rows-1,point1,2);
 
-    if(isInInterval(point1,pair<int,int>(1,imageSegment.rows*0.5)))
+    if(!isInInterval(point1,pair<int,int>(1,imageSegment.rows*0.5)))
         return false;
 
     int point2 = point1;
     while(verticalHistogram[point2] == verticalHistogram[point2+1])
         point2++;
 
-    if((point2-point1 > imageSegment.rows*0.1) && (point1 < imageSegment.rows*0.5)) // Abstand hat gewisse Größe und ist beginnt auch in unterer Bildhälfte
-    {
-        writeIntoFile(verticalHistogram, imageSegment.rows, "badgeProj.txt");
-        system("gnuplot -p -e \"plot '/home/marius/Sciebo/Studium/9_WS15-16/3_CV-Praktikum/build-LPR-Desktop-Debug/badgeProj.txt' with linespoint\"");
+    if((point2-point1 > imageSegment.rows*0.1) && (point1 < imageSegment.rows*0.5)) // Abstand hat gewisse Größe und ist beginnt auch in unterer Bildhälfte    
         return true;
-    }
     else
         return false;
+}
+
+int Segmentation::findChange(int *horizontalHistogram, int start, int maxPos)
+{
+    //thresholdValley = threshold value, which should indicate beginning of a valley
+    int result = -1;
+    int i = start;
+
+
+    while((horizontalHistogram[i+1] == horizontalHistogram[i]) && (i<maxPos)) //Abweichung finden
+        i++;
+
+    if(i > start+5)
+        result = i;
+
+    return result;
 }
 
 int Segmentation::findValley(int *horizontalHistogram, int size, int position, int thresholdValley)
@@ -124,21 +144,24 @@ int Segmentation::findValley(int *horizontalHistogram, int size, int position, i
     return result;
 }
 
-int Segmentation::findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak)
+int Segmentation::findPeak(int *histogram, int size, int position, int thresholdPeak)
 {
     // thresholdPeak = hreshold value, which should indicate beginning of a peak
     int result = -1;
     int i;
 
+    plotArray(histogram, size, "findPeak.txt",false,false);
+
     for(i=position; i < size; i++){ //Punkt finden der Schwellwert überschreitet
-        if(horizontalHistogram[i] >= thresholdPeak){ //lok. Maximum finden
-            while(horizontalHistogram[i+1] > horizontalHistogram[i] && i<size) i++;
+        if(histogram[i] >= thresholdPeak){ //lok. Maximum finden
+            while(histogram[i+1] >= histogram[i] && i<size) i++;
             result = i;
             break;
         }
     }
 
-    if((result == -1) && (i>size-5)) result = -2; //Ende des Bildes erreicht?
+    if((result == -1) && (i>size-5))
+        result = -2; //Ende des Bildes erreicht?
 
     return result;
 }
@@ -217,10 +240,10 @@ double Segmentation::computeAngle(const Mat& image, bool horizontal){
         line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,0,0), 3, CV_AA);
     }
 
-    if(horizontal)
-        imshow("Detect horizontal lines", cdst);
-    else
-        imshow("Detect vertical lines", cdst);
+    //if(horizontal)
+        //imshow("Detect horizontal lines", cdst);
+    //else
+        //imshow("Detect vertical lines", cdst);
 
 
     return angle;
@@ -377,25 +400,48 @@ bool Segmentation::isInInterval(int value, std::pair<int,int> interval){
     return ((value >= interval.first) && (value <= interval.second));
 }
 
-void Segmentation::writeIntoFile(int* array, int length, string filename){
+void Segmentation::plotArray(int* array, int length, string filename, bool rm, bool view){
     std::ofstream myfile;
     myfile.open(filename);
     std::stringstream ss;
 
     for(int i = 0; i < length; i++){
+        //ss << "(";
+        //ss << i;
+        //ss << ",";
         ss << array[i];
-        ss << "\n";
+        //ss << ")";
+        ss << ",\n";
     }
     myfile << ss.str();
     myfile.close();
+
+    char* shellCmd = new char[256];
+
+    shellCmd[0]=0;
+    strcat(shellCmd,"gnuplot -p -e \"plot '/home/marius/Sciebo/Studium/9_WS15-16/3_CV-Praktikum/build-LPR-Desktop-Debug/");
+    //gnuPlotCmd = gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/";
+    const char* tmp = filename.c_str();
+    strcat(shellCmd,tmp);
+    strcat(shellCmd,"' with linespoint\"");
+    strcat(shellCmd,"\0");
+
+    if(view) system(shellCmd);
+
+    if(rm){
+        shellCmd[0]=0;
+        strcat(shellCmd,"rm -f /home/marius/Sciebo/Studium/9_WS15-16/3_CV-Praktikum/build-LPR-Desktop-Debug/");
+        strcat(shellCmd,tmp);
+        system(shellCmd);
+        strcat(shellCmd,"\0");
+    }
 }
 
 int Segmentation::getHorizontalStart(const Mat& image){
     int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
     int width = image.cols;
     int middleRow = width/2;
-    writeIntoFile(horizontalHistogram, image.cols, "Horizontal.txt");
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
+    plotArray(horizontalHistogram, image.cols, "Horizontal.txt",false,false);
 
     int maxValue = 0;
     int indexAtMax = 0;
@@ -418,7 +464,7 @@ int Segmentation::getHorizontalEnd(const Mat& image){
     int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
     int width = image.cols;
     int middleRow = width/2;
-    writeIntoFile(horizontalHistogram, image.cols, "Horizontal.txt");
+    plotArray(horizontalHistogram, image.cols, "Horizontal.txt",false,false);
 
     int maxValue = 0;
     int indexAtMax = 0;
@@ -439,8 +485,7 @@ int Segmentation::getHorizontalEnd(const Mat& image){
 int Segmentation::getVerticalStart(const Mat& image){
     int* verticalHistogram = computeVerticalHistogram(image);
     //very important: don't mix cols with rows -> bad results
-    writeIntoFile(verticalHistogram, image.rows, "Vertical.txt");
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
+    plotArray(verticalHistogram, image.rows, "Vertical.txt",false,false);
 
     int height = image.rows;
     int middle = height/2;
@@ -488,8 +533,7 @@ int Segmentation::getVerticalStart(const Mat& image){
 int Segmentation::getVerticalEnd(const Mat& image){
     int* verticalHistogram = computeVerticalHistogram(image);
     //very important: don't mix cols with rows -> bad results
-    writeIntoFile(verticalHistogram, image.rows, "Vertical.txt");
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
+    plotArray(verticalHistogram, image.rows, "Vertical.txt",false,false);
 
     int height = image.rows;
     int middle = height/2;

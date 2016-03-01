@@ -332,7 +332,6 @@ Makefile*
 *.out
 *.nav
 *.snm
-*.tex
 *.vrb
 *.synctex.gz
 *.backup
