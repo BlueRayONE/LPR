@@ -70,7 +70,7 @@ void MainWindow::enableGUI()
 	ui->btn_crop->setEnabled(true);
 	ui->btn_segment->setEnabled(true);
 
-    ui->radio_mser->setChecked(true);
+    ui->radio_pca->setChecked(true);
     ui->radio_projection->setChecked(true);
 
 
