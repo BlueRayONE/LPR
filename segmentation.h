@@ -11,7 +11,7 @@
 class Segmentation
 {
 public:
-    Segmentation(const cv::Mat& image);
+    Segmentation(const cv::Mat& image, const std::string filename);
     ~Segmentation();
 
     int* computeHorizontalHistogram(const cv::Mat& image, NiblackVersion version);
@@ -20,17 +20,15 @@ public:
     cv::Mat cropImage(const cv::Mat& binaryImage);
     cv::Mat* findChars(const cv::Mat &originalImage);
 
-
-    static void segmentationTest(const cv::Mat& testImage);
     static void writeIntoFile(int* array, int length, std::string filename);
-
-    cv::Mat originalImage;
 
     bool isBadge(const cv::Mat& imageSegment);
     int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
     int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);
     cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
 
+    cv::Mat originalImage;
+    std::string name;
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
 

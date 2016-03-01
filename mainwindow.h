@@ -45,7 +45,7 @@ private:
     void disableGUI();
     cv::Mat originalImage;
 	std::vector<cv::Rect> locatedCandidates;
-    //void segmentationTest(const cv::Mat& originalImage);
+    std::string name;
 };
 
 #endif // MAINWINDOW_H

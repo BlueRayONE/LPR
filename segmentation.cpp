@@ -13,7 +13,7 @@
 using namespace cv;
 using namespace std;
 
-Segmentation::Segmentation(const Mat& image): originalImage(image){
+Segmentation::Segmentation(const Mat& image, string filename): originalImage(image), name(filename){
 }
 
 Segmentation::~Segmentation(){
@@ -222,6 +222,7 @@ double Segmentation::computeAngle(const Mat& image, bool horizontal){
     else
         imshow("Detect vertical lines", cdst);
 
+
     return angle;
 }
 
@@ -236,13 +237,6 @@ Mat Segmentation::rotate(const cv::Mat& toRotate){
     return rotated;
 }
 
-void Segmentation::segmentationTest(const cv::Mat& testImage){
-    Segmentation segmentation(testImage);
-
-    Mat croppedImage = segmentation.cropImage(testImage);
-    ImageViewer::viewImage(croppedImage, "Cropped Image");
-    //imshow("my binary", segmentation.computeBinaryImage(testImage, WOLFJOLION));
-}
 
 Mat Segmentation::computeBinaryImage(Mat image, NiblackVersion version, int windowSize){
     Mat greyImage;
@@ -299,9 +293,9 @@ Mat Segmentation::cropImage(const Mat& image){
 
     // Rotate the image
     Mat rotated = rotate(filteredImage);
-    imshow("Rotiert", rotated);
+    //imshow("Rotiert", rotated);
     cout << "Nach dem Rotieren" << endl;
-    imshow("Nach dem Rotieren", computeBinaryImage(rotated, WOLFJOLION, WINDOW_SIZE));
+    //imshow("Nach dem Rotieren", computeBinaryImage(rotated, WOLFJOLION, WINDOW_SIZE));
 
 
     // Crop horizontal
@@ -312,7 +306,7 @@ Mat Segmentation::cropImage(const Mat& image){
 
 
     if(horizontalCropped.rows != 0 && horizontalCropped.cols != 0){
-        imshow("Rotated horizontal cropped", horizontalCropped);
+        //imshow("Rotated horizontal cropped", horizontalCropped);
 
         // make all blue parts black
         Mat hsvImage;
@@ -331,7 +325,7 @@ Mat Segmentation::cropImage(const Mat& image){
             h.second = 130;
             s.first = 40/100.0 * 255;
             s.second = 255;
-            v.first = 50/100.0 * 255;
+            v.first = 60/100.0 * 255;
             v.second = 255;
 
             if(isInInterval(hue,h) && isInInterval(saturation,s) && isInInterval(value,v)){
@@ -340,14 +334,14 @@ Mat Segmentation::cropImage(const Mat& image){
             }
         }
         cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
-        imshow("blue to black", horizontalCropped);
+        //imshow("blue to black", horizontalCropped);
         cout << "Nach dem Schwarzmachen" << endl;
 
 
         double angle = computeAngle(horizontalCropped, false);
         double slope = tan(angle*PI/180);
         Mat sheared = shear(horizontalCropped, slope);
-        imshow("Sheared", sheared);
+        //imshow("Sheared", sheared);
         cout << "Nach dem Scheren" << endl;
 
 
@@ -356,22 +350,25 @@ Mat Segmentation::cropImage(const Mat& image){
         int end = getHorizontalEnd(sheared);
         if(start < end){
             croppedImage = sheared(Rect(start, 0, end-start, horizontalCropped.rows));
-            cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 70), croppedBinaryImage, CV_GRAY2BGR);
-            imshow("Cropped binary image", croppedBinaryImage);
-            imshow("Cropped Image", croppedImage);
+            //imshow("Cropped binary image", croppedBinaryImage);
+            //imshow("Cropped Image", croppedImage);
             cout << "Nach dem gesamten Cropping" << endl;
-            return croppedImage;
         } else {
-            croppedBinaryImage = computeBinaryImage(sheared, WOLFJOLION, 60);
-            imshow("Cropped binary image", croppedBinaryImage);
-
-            return sheared;
+            croppedImage = sheared;
+            //imshow("Cropped binary image", croppedBinaryImage);
+            cout << "Vertical cropping failed" << endl;
         }
+        cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 60), croppedBinaryImage, CV_GRAY2BGR);
+        imwrite("Cropped/" + name, croppedImage);
+        imwrite("Cropped_Binary/" + name, croppedBinaryImage);
+
+        return croppedImage;
 
     } else {
         cerr << "Horizontal cropping failed" << endl;
     }
 
+    cout << "No cropping happend - return originalImage" << endl;
     return image;
 }
 

@@ -12,8 +12,11 @@
 class Classification
 {
 public:
-    Classification();
+    Classification(const cv::Mat& image, std::string filename);
     void characterRecognition(const cv::Mat& image);
+
+    cv::Mat originalImage;
+    std::string filename;
 };
 
 #endif // CLASSIFICATION_HPP
