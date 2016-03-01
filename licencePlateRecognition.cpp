@@ -32,7 +32,7 @@ Mat licencePlateRecognition::pca(Mat src){
 
 	// c 2
 	cv::Mat c2;
-	c2 = computeRegions(imgX);
+	c2 = computeRegions(imgX);  //same color fkt
 	medianBlur(c2, c2, 5);
 
 	// c 3
@@ -60,15 +60,15 @@ Mat licencePlateRecognition::pca(Mat src){
 	identidy3x30(c1, c1);
 
 
-	Mat resized;
+	//Mat resized;
 	//double width = imgX.rows;
 	//double x = 100/ width;
 	//cv::resize(imgX, resized, Size(), x, x, 1);
-	resized = imgX.clone();
-	cv::Mat rc1;
-	cvtColor(resized, rc1, CV_BGR2GRAY);
+	//resized = imgX.clone();
+	//cv::Mat rc1;
+	//cvtColor(resized, rc1, CV_BGR2GRAY);
 	//rc1 = bothat(rc1, 2, 8);
-	rc1 = computeSobelImgX(rc1);
+	//rc1 = computeSobelImgX(rc1);
 	//medianBlur(rc1, rc1, 5);
 	//identidy3x30(rc1, rc1);
 
