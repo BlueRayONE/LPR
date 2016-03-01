@@ -22,7 +22,8 @@ SOURCES += main.cpp\
     binarizewolfjolion.cpp \
     MSER.cpp \
     licencePlateRecognition.cpp \
-    Segmentation_MSER.cpp
+    Segmentation_MSER.cpp \
+    classification.cpp
 
 HEADERS  += mainwindow.h \
     ImageReader.hpp \
@@ -34,7 +35,8 @@ HEADERS  += mainwindow.h \
     binarizewolfjolion.h \
     MSER.h \
     licencePlateRecognition.hpp \
-    Segmentation_MSER.h
+    Segmentation_MSER.h \
+    classification.h
 
 FORMS    += mainwindow.ui
 
@@ -58,15 +60,18 @@ unix {
 
     QMAKE_CXXFLAGS += -std=c++11 -Wall -pedantic -Wno-unknown-pragmas
 
-    INCLUDEPATH += /opt/include \
+    INCLUDEPATH += /opt/opencv3/include/ \
                    /usr/local/include
 
-    LIBS += -L/opt/lib \
+    LIBS += -L/opt/opencv3/lib/ \
             -L/usr/local/lib \
+            -L/usr/lib \
+            -ltesseract \
             -lopencv_core \
             -lopencv_highgui \
             -lopencv_imgproc \
             -lopencv_imgcodecs \ 
+            -lopencv_text \
             -lopencv_features2d
     QMAKE_CXXFLAGS_WARN_ON = -Wno-unused-variable -Wno-reorder
 }

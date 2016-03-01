@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>269</width>
-    <height>340</height>
+    <height>435</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -100,6 +100,13 @@
       </property>
      </widget>
     </item>
+    <item>
+     <widget class="QPushButton" name="btn_recognize">
+      <property name="text">
+       <string>recognize</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menuBar">
@@ -108,7 +115,7 @@
      <x>0</x>
      <y>0</y>
      <width>269</width>
-     <height>21</height>
+     <height>27</height>
     </rect>
    </property>
   </widget>

@@ -3,6 +3,7 @@
 #include "localisation.h"
 #include "segmentation.h"
 #include "licencePlateRecognition.hpp"
+#include "classification.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -29,9 +30,16 @@ void MainWindow::on_btn_openImage_clicked()
 
     if(!imagePath.isNull() && !imagePath.isEmpty())
     {
-
        cv::Mat img = ImageReader::readImage(QtOpencvCore::qstr2str(imagePath));
 
+       // get file name
+       string filename = imagePath.toStdString();
+       const size_t last_slash_idx = filename.find_last_of('/');
+
+       if (string::npos != last_slash_idx) {
+           filename.erase(0, last_slash_idx + 1);
+           name = filename;
+       }
 
        if(!img.empty())
        {
@@ -125,22 +133,32 @@ void MainWindow::on_btn_localize_clicked()
 
 void MainWindow::on_btn_crop_clicked()
 {
-	Segmentation::segmentationTest(originalImage);
+    Segmentation segmentation(originalImage, name);
+    segmentation.cropImage(originalImage);
 }
 
 void MainWindow::on_btn_segment_clicked()
 {
     if(ui->radio_projection->isChecked())
     {
-            Segmentation segmentation(originalImage);
+            Segmentation segmentation(originalImage, name);
 
             cv::Mat croppedImage = segmentation.cropImage(originalImage);
             segmentation.findChars(croppedImage);
     }
     else
     {
-        //Segmentation segmentation(originalImage);
-        //cv::Mat cropped = segmentation.cropImage(originalImage);
-        Segmentation_MSER::findChars(originalImage);
+        Segmentation segmentation(originalImage, name);
+        cv::Mat cropped = segmentation.cropImage(originalImage);
+        //Segmentation_MSER::findChars(originalImage);
+        Segmentation_MSER::findChars(cropped);
     }
+}
+
+
+
+void MainWindow::on_btn_recognize_clicked()
+{
+    Classification classification(originalImage, name);
+    classification.characterRecognition(originalImage);
 }

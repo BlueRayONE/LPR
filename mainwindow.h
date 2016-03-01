@@ -37,13 +37,15 @@ private slots:
 
     void on_btn_segment_clicked();
 
+    void on_btn_recognize_clicked();
+
 private:
     Ui::MainWindow *ui;
     void enableGUI();
     void disableGUI();
     cv::Mat originalImage;
 	std::vector<cv::Rect> locatedCandidates;
-    //void segmentationTest(const cv::Mat& originalImage);
+    std::string name;
 };
 
 #endif // MAINWINDOW_H
