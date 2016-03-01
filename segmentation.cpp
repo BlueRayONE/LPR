@@ -20,20 +20,20 @@ Segmentation::~Segmentation(){
 
 }
 
-Mat* Segmentation::findChars(const cv::Mat& originalImage)
+bool Segmentation::findChars()
 {
-    chars = new Mat[10]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
+    //chars = new Mat[11]; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
+    chars = std::vector<cv::Mat>();
     int leftPos  = 0;
     int rightPos = 0;
     int tmpPos = 0;
     bool badgeFound = false;
     bool failed = false;
-    int size = originalImage.cols;
-    cv::Mat image = originalImage.clone();
+    int size = croppedImage.cols;
 
-    int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
+    int* horizontalHistogram = computeHorizontalHistogram(croppedImage, WOLFJOLION);
 
-    plotArray(horizontalHistogram, image.cols, "horizontalFULL.txt",false,true);
+    plotArray(horizontalHistogram, size, "horizontalFULL.txt",false,true);
 
     for(int charNo=0; charNo<10; charNo++){
         if(rightPos >= size-10) break;
@@ -56,33 +56,32 @@ Mat* Segmentation::findChars(const cv::Mat& originalImage)
         }
         else if(rightPos == -2) break; //Ende erreicht
 
-        if(badgeFound){
-            chars[charNo-1]= croppedBinaryImage(Rect(leftPos,0, rightPos-leftPos, croppedBinaryImage.rows)); //-1 weil wenns Plaketten waren nichts eingefügt wurde
-            line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
-        }else{
-            if(!isBadge(croppedImage(Rect(leftPos, 0, rightPos-leftPos, croppedImage.rows)))){ //Es handelt sich nicht um Bereich der Plaketten
-                chars[charNo]= croppedBinaryImage(Rect(rightPos, 0, rightPos-leftPos, croppedBinaryImage.rows));
-                line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
-                tmpPos = findChange(horizontalHistogram,leftPos+2,rightPos);
-                if((tmpPos-leftPos) > 30){ //ist Plakette bei Binärisierung gefiltert worden? Dann gibts ne große weiße Lücke!
-                    badgeFound = true;
-                    rightPos = tmpPos-5;
-                    line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Leerraums einzeichnen
-                    line(originalImage, cv::Point((leftPos+((tmpPos-leftPos)/2)), 0), cv::Point((leftPos+((tmpPos-leftPos)/2)), originalImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge markieren
 
-                }
-            }else {
+        if(badgeFound || !isBadge(croppedImage(Rect(leftPos, 0, rightPos-leftPos, croppedImage.rows)))){ //Es handelt sich nicht um Bereich der Plaketten
+            line(croppedImage, cv::Point(rightPos, 0), Point(rightPos, croppedImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
+            tmpPos = findChange(horizontalHistogram,leftPos+2,rightPos);
+            if((tmpPos-leftPos) > 30 && !badgeFound){ //ist Plakette bei Binärisierung gefiltert worden? Dann gibts ne große weiße Lücke!
                 badgeFound = true;
-                line(originalImage, cv::Point((leftPos+((rightPos-leftPos)/2)), 0), cv::Point((leftPos+((rightPos-leftPos)/2)), originalImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge markieren
-                rightPos=findValley(horizontalHistogram,size,tmpPos,3) + 2;
-                line(originalImage, cv::Point(rightPos, 0), Point(rightPos, originalImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
+                line(croppedImage, cv::Point(tmpPos-5, 0), Point(tmpPos-5, croppedImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Leerraums einzeichnen
+                line(croppedImage, cv::Point((leftPos+((tmpPos-leftPos)/2)), 0), cv::Point((leftPos+((tmpPos-leftPos)/2)), croppedImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge mittig markieren
+                chars.push_back(cv::Mat(1,1,CV_8U));
+                charNo++; //das war nun ein "außerordentlicher" Char mehr im Vektor, also erhöhen
+                leftPos = tmpPos-5; // leftPos für Anfang vom eigentlichen Buchstaben auf Ende des Leerraums setzen
             }
+            chars.push_back(croppedBinaryImage(Rect(leftPos, 0, rightPos-leftPos, croppedBinaryImage.rows)));
+        }else{
+            badgeFound = true;
+            chars.push_back(cv::Mat(1,1,CV_8U));
+            line(croppedImage, cv::Point((leftPos+((rightPos-leftPos)/2)), 0), cv::Point((leftPos+((rightPos-leftPos)/2)), croppedImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge mittig markieren
+            rightPos=findValley(horizontalHistogram,size,tmpPos,3) + 2;
+            line(croppedImage, cv::Point(rightPos, 0), Point(rightPos, croppedImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende der Plakette einzeichnen
         }
+
 
     }
 
-    ImageViewer::viewImage(originalImage, "segmented", 400);
-    return chars;
+    ImageViewer::viewImage(croppedImage, "segmented", 400);
+    return failed;
 }
 
 bool Segmentation::isBadge(const cv::Mat& imageSegment)
