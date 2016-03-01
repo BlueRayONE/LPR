@@ -61,11 +61,11 @@ unix {
     QMAKE_CXXFLAGS += -std=c++11 -Wall -pedantic -Wno-unknown-pragmas
 
     INCLUDEPATH += /opt/opencv3/include/ \
-                   #/usr/local/include \
+                   /usr/local/include \
                    /usr/include
 
     LIBS += -L/opt/opencv3/lib/ \
-            #-L/usr/local/lib \
+            -L/usr/local/lib \
             -L/usr/lib \
             -ltesseract \
             -lopencv_core \
