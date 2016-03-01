@@ -139,18 +139,20 @@ void MainWindow::on_btn_crop_clicked()
 
 void MainWindow::on_btn_segment_clicked()
 {
+    Segmentation segmentation(originalImage, name);
+    cv::Mat cropped = segmentation.cropImage(originalImage);
     if(ui->radio_projection->isChecked())
     {
-            Segmentation segmentation(originalImage, name);
+        segmentation.findChars();
 
-            cv::Mat croppedImage = segmentation.cropImage(originalImage);
-            segmentation.findChars(croppedImage);
+        for(int i=0; i < segmentation.chars.size(); i++){
+            char* title = new char[128];
+            sprintf(title,"Buchstabe Nr. %i",i);
+            ImageViewer::viewImage(segmentation.chars[i], title, 400);
+        }
     }
     else
     {
-        Segmentation segmentation(originalImage, name);
-        cv::Mat cropped = segmentation.cropImage(originalImage);
-        //Segmentation_MSER::findChars(originalImage);
         Segmentation_MSER::findChars(cropped);
     }
 }

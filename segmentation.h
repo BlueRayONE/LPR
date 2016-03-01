@@ -18,7 +18,7 @@ public:
     int* computeVerticalHistogram(const cv::Mat& image);
     cv::Mat cropHorizontal(const cv::Mat& binaryImage);
     cv::Mat cropImage(const cv::Mat& binaryImage);
-    cv::Mat* findChars(const cv::Mat &originalImage);
+    bool findChars();
 
     bool isBadge(const cv::Mat& imageSegment);
     int findChange(int *horizontalHistogram, int start, int maxPos);
@@ -30,7 +30,7 @@ public:
     std::string name;
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
-    cv::Mat* chars; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
+    std::vector<cv::Mat> chars; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
 
 private:
     int getVerticalStart(const cv::Mat& image);
