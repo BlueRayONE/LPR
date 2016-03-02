@@ -102,6 +102,17 @@
     </item>
     <item>
      <widget class="QPushButton" name="btn_recognize">
+      <property name="font">
+       <font>
+        <family>Noto Sans [unknown]</family>
+        <pointsize>15</pointsize>
+        <weight>75</weight>
+        <italic>false</italic>
+        <bold>true</bold>
+        <underline>false</underline>
+        <strikeout>false</strikeout>
+       </font>
+      </property>
       <property name="text">
        <string>recognize</string>
       </property>
