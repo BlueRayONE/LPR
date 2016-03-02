@@ -8,29 +8,6 @@ const float MAX_ALLOWED_WIDTH_DEV = 0.75f; //40 percent
 
 cv::Mat src, dst;
 
-int morph_elem = 0;
-int morph_size = 0;
-int x = 0;
-int y = 0;
-int morph_operator = 0;
-int const max_operator = 4;
-int const max_elem = 2;
-int const max_kernel_size = 100;
-
-char* window_name = "Morphology Transformations Demo";
-
-void Morphology_Operations(int, void*)
-{
-	// Since MORPH_X : 2,3,4,5 and 6
-	int operation = morph_operator + 2;
-
-	cv::Mat element = cv::getStructuringElement(morph_elem, cv::Size(src.cols / (x + 1), src.rows / (y + 1)));
-
-	/// Apply the specified morphology operation
-	morphologyEx(src, dst, operation, element);
-	imshow(window_name, dst);
-}
-
 Segmentation_MSER::Segmentation_MSER()
 {
 
@@ -41,37 +18,12 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
     cv::Mat grey;
 	cv::cvtColor(img, grey, CV_BGR2GRAY);
 
-	/*src = grey;
-	/// Create window
-	cv::namedWindow(window_name, CV_WINDOW_AUTOSIZE);
-
-	/// Create Trackbar to select Morphology operation
-	cv::createTrackbar("Operator:\n 0: Opening - 1: Closing \n 2: Gradient - 3: Top Hat \n 4: Black Hat", window_name, &morph_operator, max_operator, Morphology_Operations);
-
-	/// Create Trackbar to select kernel type
-	cv::createTrackbar("Element:\n 0: Rect - 1: Cross - 2: Ellipse", window_name,
-		&morph_elem, max_elem,
-		Morphology_Operations);
-
-	/// Create Trackbar to choose kernel size
-	cv::createTrackbar("Kernel size x:\n 2n +1", window_name,
-		&x, max_kernel_size,
-		Morphology_Operations);
-
-	cv::createTrackbar("Kernel size:\n 2n +1", window_name,
-		&y, max_kernel_size,
-		Morphology_Operations);
-
-	/// Default start
-	Morphology_Operations(0, 0);*/
-
-	//grey = morph(grey);
-
-	//ImageViewer::viewImage(grey, "morphed", 400);
-
     auto mser = MSER::mserFeature(grey, false);
     std::vector<cv::Rect> bbox = mser.second;
 	cv::Mat mser_m = mser.first;
+	cv::Mat resImg;
+	cv::bitwise_not(mser_m, resImg);
+
 
 	cv::Mat colorM;
 	cvtColor(mser_m, colorM, CV_GRAY2RGB);
@@ -82,7 +34,7 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 0, 255), 1);
 	}
 
-	bbox = Segmentation_MSER::discardOverlapping(bbox);
+	bbox = Segmentation_MSER::discardOverlapping(bbox, grey.rows, grey.cols);
 
 	for (auto box : bbox)
 	{
@@ -95,17 +47,25 @@ std::vector<cv::Mat> Segmentation_MSER::findChars(cv::Mat img)
 	std::sort(bbox.begin(), bbox.end(), [](cv::Rect r1, cv::Rect r2) { return r1.x < r2.x; });
 
 	std::vector<cv::Mat> res;
-	cv::Mat img_bk = img.clone();
 
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box, grey.rows, grey.cols);
 		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 0), 2);
-		cv::Mat mat = img_bk(relaxedBox);
-		res.push_back(mat);
+		cv::Mat digit = resImg(box);
+		cv::Mat bordered;
+		cv::copyMakeBorder(digit, bordered, RELAX_PIXELS_VERT, RELAX_PIXELS_VERT, RELAX_PIXELS_HOR, RELAX_PIXELS_HOR, cv::BORDER_CONSTANT | cv::BORDER_ISOLATED, cv::Scalar(255));
+		res.push_back(bordered);
 	}
 
 	ImageViewer::viewImage(colorM, "mser-", 200);
+
+	//uncomment to print passed digits
+	/*size_t i = 0;
+	for (auto digit : res)
+	{
+		ImageViewer::viewImage(digit, "digit" + std::to_string(i++), 50);
+	}*/
 
 
     return res;
@@ -127,7 +87,7 @@ std::pair< cv::Mat, std::vector<cv::Rect>> Segmentation_MSER::mserFeature(cv::Ma
 	//int _edge_blur_size=5				//blur kernel size
 	//cv::bitwise_not(grey, grey);
 
-	cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 60, 14400, 0.25, 0.2, 100, 1.01, 0.003, 5); //all default values
+	cv::Ptr<cv::MSER> ptr = cv::MSER::create(5, 10, 14400, 0.1, 0.2, 100, 1.01, 0.003, 5); //all default values
 	ptr->setPass2Only(true);
 
 	cv::Mat mser = cv::Mat(grey.rows, grey.cols, CV_8U, cv::Scalar(0));
@@ -156,37 +116,77 @@ cv::Rect Segmentation_MSER::relaxRect(cv::Rect rect, int rows, int cols)
 	int w_y = RELAX_PIXELS_VERT;
 	int x = (rect.x - w_x < 0) ? 0 : rect.x - w_x;
 	int y = (rect.y - w_y < 0) ? 0 : rect.y - w_y;
-	int width = (rect.x + rect.width + 2 * w_x > cols) ? cols - rect.x : rect.width + 2 * w_x;
-	int height = (rect.y + rect.height + 2 * w_y > rows) ? rows - rect.y : rect.height + 2 * w_y;
+	int width = (x + rect.width + 2 * w_x > cols) ? 
+		cols - x : 
+		rect.width + 2 * w_x;
+	int height = (y + rect.height + 2 * w_y > rows) ? 
+		rows - y : 
+		rect.height + 2 * w_y;
 	return cv::Rect(x, y, width, height);
 
 }
 
-std::vector<cv::Rect> Segmentation_MSER::discardOverlapping(std::vector<cv::Rect> bbox)
+std::vector<cv::Rect> Segmentation_MSER::discardOverlapping(std::vector<cv::Rect> bbox, int rows, int cols)
 {
+	if (bbox.size() == 0) return bbox;
+
+	auto getCenter = [](cv::Rect rect) { return cv::Point2f(rect.x + rect.width / 2, (rect.y + rect.height / 2)); };
+
+	std::vector<cv::Point2f> centerPoints;
+	for (auto rect : bbox)
+	{
+		centerPoints.push_back(getCenter(rect));
+	}
+
+	cv::Vec4f line;
+	cv::fitLine(centerPoints, line, CV_DIST_HUBER, 0, 0.01, 0.01);
+	float x0 = line[2];	float y0 = line[3]; float dx = line[0]; float dy = line[1];
+	//cv::line(visualize_p, cv::Point(x0 + dx * -1000, y0 + dy * -1000), cv::Point(x0 + dx * 1000, y0 + dy * 1000), cv::Scalar(255, 255, 0), 1);
+
+	float a = -dy; float b = dx; float c = (dy * x0 - dx * y0); //-(-dy * x0 + dx * y0)
+	auto algDist = [a, b, c](cv::Point2f p) { return std::abs(a*p.x + b*p.y + c); };
+
+	std::vector<cv::Rect> inlierRects;
+
+	for (size_t i = 0; i < centerPoints.size(); i++)
+	{
+		cv::Point current = centerPoints[i];
+		if (algDist(current) <= 1.0/DERIV * rows)
+			inlierRects.push_back(bbox[i]);
+	}
+
 	//discard inner elements
 	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
 	std::vector<cv::Rect> res;
-	if (bbox.size() == 0) return bbox;
-	res.push_back(bbox[0]);
+	res.push_back(inlierRects[0]);
 
-	for (size_t i = 1; i < bbox.size(); i++)
+	for (size_t i = 1; i < inlierRects.size(); i++)
 	{
-		auto elem1 = bbox[i];
+		auto elem1 = inlierRects[i];
 		bool intersect = false;
 		for (size_t j = 0; j < res.size(); j++)
 		{
 			auto elem2 = res[j];
-			if (intersectArea(elem1, elem2) == elem1.area())
+			if (intersectArea(elem1, elem2) == elem1.area()) //elem1 is surrounded by elem2 --> keep elem2 if center point is 
 			{
 				intersect = true;
-				res[j] = elem1;
+				cv::Point2f center1 = getCenter(elem1);
+				cv::Point2f center2 = getCenter(elem2);
+				if (std::abs(center1.x - center2.x) <= 1.0 / DERIV * rows && std::abs(center1.y - center2.y) <= 1.0 / DERIV * rows)
+					res[j] = elem2;
+				else
+					res[j] = elem1;
 			}
-			else if (intersectArea(elem1, elem2) == elem2.area())
+			else if (intersectArea(elem1, elem2) == elem2.area()) //elem2 is surrounded by elem1
 			{
 				intersect = true;
-				res[j] = elem2;
+				cv::Point2f center1 = getCenter(elem1);
+				cv::Point2f center2 = getCenter(elem2);
+				if (std::abs(center1.x - center2.x) <= 1.0 / DERIV * rows && std::abs(center1.y - center2.y) <= 1.0 / DERIV * rows)
+					res[j] = elem1;
+				else
+					res[j] = elem2;
 			}
 		}
 
