@@ -21,10 +21,8 @@ public:
 	~MSER();
 	std::vector<cv::Rect> run();
     static std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
-	static std::tuple<double, double, double, double> meanStdDev(std::vector<cv::Rect> elems);
+	std::tuple<double, double, double, double> meanStdDev(std::vector<cv::Rect> elems);
 private:
-	cv::Mat originalImage;
-	cv::Mat resizedImage;
 	const float MAX_HEIGHT_SCALE = 1.5f;			//
 	const float MAX_WIDTH_SCALE = 2.0f;				// same as MAX_HEIGHT_SCALE but for rect width
 	const float MAX_BBOX_HEIGHT_SCALE = 3.5f;		// 3.0f
@@ -47,16 +45,16 @@ private:
 
 	cv::Rect relaxRect(cv::Rect rect);
 	cv::Mat getROI(cv::Rect rect);
+	int intersectArea(cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
-	//member
+
 	double scaleFactor;
+	cv::Mat originalImage;
+	cv::Mat resizedImage;
 	cv::Mat grey, mser_p, mser_m;
 	//only for visualiztation
 	cv::Mat visualize_p, colorP, colorP2, colorP3, colorM, img_bk;
 
-	cv::Mat adjustContrastBrightness(cv::Mat, double alpha, int beta);
-
-	cv::Mat morph(cv::Mat img);
 };
 
 #endif

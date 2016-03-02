@@ -18,10 +18,6 @@ std::vector<cv::Rect> MSER::run()
 	mser_p = mser_pPair.first;
 	std::vector< cv::Rect > bboxes_p = mser_pPair.second;
 
-	/*auto mser_pPair = this->mserFeature(originalImage, true);
-	mser_p = mser_pPair.first;
-	std::vector< cv::Rect > bboxes_p = mser_pPair.second;*/
-
 	auto mser_mPair = this->mserFeature(grey, false);
 	mser_m = mser_mPair.first;
 	std::vector< cv::Rect > bboxes_m = mser_mPair.second;
@@ -51,11 +47,6 @@ std::vector<cv::Rect> MSER::run()
 	auto bboxes_p_real = realDiscardBBoxes_p(bboxes_p_pre, bboxes_m);
 	visualize_p = colorP3;
 	auto bboxes_p_post = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); 
-
-	//TODO: real candidate overlapped by false canidate which has more inner elements f.ex. shadows or edges
-	//see R8 (should use biggest) vs MAZDA (cropped) (should use smalles)
-	//keep bigger if mser+ has same size mser- maybe plus different size (it's okay to add junk to candidate if bigger has more license plate digits, keep smaller if bigger adds only more junk)
-	//TODO: scale down big pictures and scale up found candidate rectangle
 
 	std::vector<cv::Mat> canidates;
 
@@ -150,9 +141,6 @@ std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, st
 {
 	std::vector<std::pair<cv::Rect, int>> rectInnerElements = getNumInnerElements(boxes_p, boxes_v);
 
-	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
-
-
 	std::vector<std::pair<cv::Rect, int>> res;
 	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
 	res.push_back(rectInnerElements[0]);
@@ -192,7 +180,6 @@ std::vector<cv::Rect> MSER::preDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, st
 std::vector<cv::Rect> MSER::realDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, std::vector<cv::Rect> boxes_v)
 {
 	std::vector<cv::Rect> res;
-	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
 	cv::Mat reset_vis = visualize_p.clone();
 
@@ -316,15 +303,15 @@ std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElement
 	int minWidth = -1; int maxWidth = -1;
 	float avgHeight = 0; float avgWidth = 0;
 
+	float leftBoundary0 = meanHeight - 2 * stdevHeight;
+	float rightBoundary0 = meanHeight + 2 * stdevHeight;
+	float leftBoundary1 = meanWidth - 2 * stdevWidth;
+	float rightBoundary1 = meanWidth + 2 * stdevWidth;
+
 	size_t count = 0;
 	for (auto elem : innerElements)
 	{
-		float leftBoundary0 = meanHeight - 2 * stdevHeight;
-		float rightBoundary0 = meanHeight + 2 * stdevHeight;
-		float leftBoundary1 = meanWidth - 2 * stdevWidth;
-		float rightBoundary1 = meanWidth + 2 * stdevWidth;
-
-		if (leftBoundary0 < elem.height && elem.height < rightBoundary0 && leftBoundary1 < elem.width && elem.width < rightBoundary1)
+		if (leftBoundary0 <= elem.height && elem.height <= rightBoundary0 && leftBoundary1 <= elem.width && elem.width <= rightBoundary1)
 		{
 			if (elem.height > maxHeight)
 				maxHeight = elem.height;
@@ -357,8 +344,6 @@ std::vector<std::pair<cv::Rect, int>> MSER::getNumInnerElements(std::vector<cv::
 {
 	std::vector<std::pair<cv::Rect, int>> rectInnerElements;
 
-	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
-
 	for (auto rect_p : boxes_p)
 	{
 		int count = 0;
@@ -389,8 +374,6 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 	{
 		cv::rectangle(visualize_p, relaxRect(elem), cv::Scalar(0, 255, 255), 1);
 	}
-
-	auto intersectArea = [](cv::Rect r1, cv::Rect r2) { return (r1 & r2).area(); };
 
 	std::vector<std::pair<cv::Rect, int>> res;
 	if (rectInnerElements.size() == 0) return std::vector<cv::Rect>();
@@ -480,38 +463,6 @@ cv::Rect MSER::relaxRect(cv::Rect rect)
 cv::Mat MSER::getROI(cv::Rect rect)
 {
 	return originalImage(cv::Rect(rect.x / scaleFactor, rect.y / scaleFactor, rect.width / scaleFactor, rect.height / scaleFactor));
-}
-
-
-cv::Mat MSER::adjustContrastBrightness(cv::Mat img, double alpha, int beta)
-{
-	cv::Mat res = cv::Mat::zeros(img.size(), img.type());
-
-	/// Do the operation new_image(i,j) = alpha*image(i,j) + beta
-	for (int y = 0; y < img.rows; y++)
-	{
-		for (int x = 0; x < img.cols; x++)
-		{
-			for (int c = 0; c < 3; c++)
-			{
-				res.at<cv::Vec3b>(y, x)[c] = cv::saturate_cast<uchar>(alpha*(img.at<cv::Vec3b>(y, x)[c]) + beta);
-			}
-		}
-	}
-
-	return res;
-}
-
-cv::Mat MSER::morph(cv::Mat img)
-{
-	cv::Mat elemVertical = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(1,9));
-	cv::Mat elemHorizontal = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(9, 1));
-	
-	cv::Mat res1, res2;
-	cv::erode(img, res1, elemVertical);
-	cv::erode(res1, res2, elemHorizontal);
-
-	return res2;
 }
 
 cv::Mat MSER::resizeImg(cv::Mat img)
