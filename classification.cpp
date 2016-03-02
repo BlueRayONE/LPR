@@ -18,7 +18,8 @@ Classification::Classification(const Mat& image, string filename) : originalImag
 void Classification::characterRecognition(const Mat& image){
     Segmentation segmentation(image, filename);
     segmentation.cropImage(image);
-    vector<cv::Mat> chars = Segmentation_MSER::findChars(segmentation.croppedImage);
+	Segmentation_MSER mser = Segmentation_MSER(segmentation.croppedImage);
+    vector<cv::Mat> chars = mser.findChars();
     //segmentation.findChars();
     //vector<cv::Mat> chars = segmentation.chars;
 
