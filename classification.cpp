@@ -19,7 +19,8 @@ void Classification::characterRecognition(const Mat& image){
     Segmentation segmentation(image, filename);
     segmentation.cropImage(image);
     vector<cv::Mat> chars = Segmentation_MSER::findChars(segmentation.croppedImage);
-    //vector<cv::Mat> chars = segmentation.findChars(segmentation.croppedImage);
+    //segmentation.findChars();
+    //vector<cv::Mat> chars = segmentation.chars;
 
     Ptr<OCRTesseract> tesseract = OCRTesseract::create("/usr/local/share/tessdata", "deu2", NULL, 0, 10);
 
@@ -27,14 +28,14 @@ void Classification::characterRecognition(const Mat& image){
     for(int i = 0; i < chars.size(); i++){
         Mat character = chars.at(i);
 
-        Mat binchar = segmentation.computeBinaryImage(character, WOLFJOLION, 30);
+        //Mat binchar = segmentation.computeBinaryImage(character, WOLFJOLION, 30);
 
         //imshow(to_string(i), binchar);
         string output;
         vector<Rect> boxes;
         vector<string> words;
         vector<float> confidences;
-        tesseract->run(binchar, output, &boxes, &words, &confidences);
+        tesseract->run(character, output, &boxes, &words, &confidences);
         output.erase(std::remove(output.begin(), output.end(), '\n'), output.end());
         result.append(output);
         for(int j = 0; j < confidences.size(); j++){
