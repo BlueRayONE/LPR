@@ -19,7 +19,7 @@ class MSER
 public:
 	MSER(cv::Mat imgOrig);
 	~MSER();
-	std::vector<cv::Rect> run();
+	std::vector<cv::Mat> run();
     static std::pair<cv::Mat, std::vector<cv::Rect>> mserFeature(cv::Mat grey, bool plus = true);
 	std::tuple<double, double, double, double> meanStdDev(std::vector<cv::Rect> elems);
 private:

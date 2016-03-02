@@ -9,7 +9,7 @@ MSER::MSER(cv::Mat imgOrig)
 	resizedImage = resizeImg(originalImage);
 }
 
-std::vector<cv::Rect> MSER::run()
+std::vector<cv::Mat> MSER::run()
 {
 	img_bk = resizedImage.clone();
 	cv::cvtColor(resizedImage, grey, CV_BGR2GRAY);
@@ -48,7 +48,7 @@ std::vector<cv::Rect> MSER::run()
 	visualize_p = colorP3;
 	auto bboxes_p_post = postDiscardBBoxes_p(bboxes_p_real, bboxes_m); 
 
-	std::vector<cv::Mat> canidates;
+	std::vector<cv::Mat> candidates;
 
 	for (auto rect : bboxes_p_real)
 	{
@@ -60,7 +60,7 @@ std::vector<cv::Rect> MSER::run()
 	{
 		cv::rectangle(colorP3, rect, cv::Scalar(0, 255, 0), 1);
 		cv::rectangle(img_bk, rect, cv::Scalar(0, 255, 0), 1);
-		canidates.push_back(getROI(rect));
+		candidates.push_back(getROI(rect));
 	}
 
 	cvtColor(mser_m, colorM, CV_GRAY2RGB);
@@ -82,13 +82,13 @@ std::vector<cv::Rect> MSER::run()
 	
 
 	size_t i = 0;
-	for (auto roi : canidates)
+	for (auto roi : candidates)
 	{
 		ImageViewer::viewImage(roi, "candidate " + std::to_string(i), 100);
 		i++;
 	}
 
-	return bboxes_p_post;
+	return candidates;
 }
 
 

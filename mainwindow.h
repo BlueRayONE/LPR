@@ -44,7 +44,7 @@ private:
     void enableGUI();
     void disableGUI();
     cv::Mat originalImage;
-	std::vector<cv::Rect> locatedCandidates;
+	std::vector<cv::Mat> locatedCandidates;
     std::string name;
 };
 
