@@ -24,9 +24,9 @@ public:
 
 private:
 	const float THRESH_TO_ZERO = 1;
-	const float HEIGHT_TO_WIDTH_RATIO = 4.728f; //5.0
+	const float HEIGHT_TO_WIDTH_RATIO = 4.728f; 
 	const float GAP_TO_HEIGHT_RATIO = 68.0f / 220;
-	const float AVG_WEIGHT = 0.5f; //0.5f;
+	const float MAX_WEIGHT = 0.5f;
 	const float MAX_RECT_HEIGHT_RATIO = 110.0f / 1000; //120
 	const float MIN_RECT_HEIGHT_RATIO = 30.0f / 1000; //50
 	const float WEIGHT_STEP_SIZE = 0.025f;
@@ -50,7 +50,6 @@ private:
 	std::vector<std::pair<int, float>> findPeaks(std::vector<float> arr);
 	std::pair<int, float> findMaxPeak(std::vector<std::pair<int, float>> peakIDs, std::vector<float> arr);
 	std::vector<float> gaussFilter(std::vector<int> arr);
-	std::vector<float> movingAvg(std::vector<float> arr);
 
 	float rectRank(cv::Mat img, cv::Rect rect);
 	std::vector<std::pair<int, int>> findThresholdAreas(double avg, std::vector<float>, bool splitAreas = true);
@@ -59,8 +58,7 @@ private:
 	std::vector<std::pair<float, cv::Rect>> findExactCandidate(cv::Mat grey, cv::Mat rankImg, std::vector<std::pair<float, cv::Rect>> candidates);
 	
 	bool rectIntersect(cv::Rect r1, cv::Rect r2);
-	bool evalRect(cv::Rect rect, float rank, cv::Mat evalImg);
-	cv::Mat gbrHist(cv::Mat img);
+	bool evalRect(cv::Rect rect, cv::Mat evalImg);
 
 	template<typename T> void print(std::vector<T> arr);
 };

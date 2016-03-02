@@ -16,14 +16,14 @@ Classification::Classification(const cv::Mat& image, string filename) : original
 
 void Classification::characterRecognition(const cv::Mat& image){
     MSER mser(image);
-    vector<cv::Rect> plates = mser.run();
-/*    cv::Mat plate = image(plates.at(0));
-    cout << plates.size() << endl;
-    imshow("plate", plate);
+    vector<cv::Mat> plates = mser.run();
+    cv::Mat plate = plates.at(0);
 
-   /* Segmentation segmentation(plate, filename);
+    Segmentation segmentation(plate, filename);
     segmentation.cropImage(plate);
-    vector<cv::Mat> chars = Segmentation_MSER::findChars(segmentation.croppedImage);
+    Segmentation_MSER seg_mser = Segmentation_MSER(segmentation.croppedImage);
+    vector<cv::Mat> chars = seg_mser.findChars();
+
     //segmentation.findChars();
     //vector<cv::Mat> chars = segmentation.chars;
 

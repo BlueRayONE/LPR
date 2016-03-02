@@ -153,7 +153,8 @@ void MainWindow::on_btn_segment_clicked()
     }
     else
     {
-        Segmentation_MSER::findChars(cropped);
+		Segmentation_MSER segmentationMSER(cropped);
+		segmentationMSER.findChars();
     }
 }
 
