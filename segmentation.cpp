@@ -48,13 +48,15 @@ bool Segmentation::findChars()
         else if(tmpPos == -2) break;//Ende erreicht
 
 
-        rightPos=findValley(horizontalHistogram,size,tmpPos,3) + 2; //Ende des nächsten Elements finden und bisschen was drauf rechnen
+        rightPos=findValley(horizontalHistogram,size,tmpPos,3); //Ende des nächsten Elements finden
 
         if(rightPos == -1){ //Kein Valley gefunden!!
             failed = true;
             break;
         }
         else if(rightPos == -2) break; //Ende erreicht
+
+        rightPos += 2; // Leicht erhöhen um wirklich im weißen Bereich NACH Buchstaben zu sein.
 
         //Badge muss innerhalb der ersten 4 Iterationen gefunden worden sein => charNo <= 3
         if(badgeFound || charNo > 3 || !isBadge(croppedImage(Rect(leftPos, 0, rightPos-leftPos, croppedImage.rows)))){ //Es handelt sich nicht um Bereich der Plaketten
