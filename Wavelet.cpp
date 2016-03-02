@@ -87,13 +87,8 @@ void Wavelet::run(cv::Mat img)
 
 	std::vector<std::pair<int,float>> peaks = this->findPeaks(gauss);
 	std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gauss);
-    //int maxID = maxIDVal.first;
 	float max = maxIDVal.second;
-
-	double avg = std::accumulate(gauss.begin(), gauss.end(), 0.0) / (double) (binarizedHL.rows);
-	avg = max;
-
-	std::vector<std::pair<int, int>> startRowsHeights =  this->findThresholdAreas(avg, gauss);
+	std::vector<std::pair<int, int>> startRowsHeights =  this->findThresholdAreas(max, gauss);
 
 	for (auto i = startRowsHeights.begin(); i != startRowsHeights.end(); ++i)
 		qDebug() << (*i).first << " " << (*i).second;
@@ -112,7 +107,7 @@ void Wavelet::run(cv::Mat img)
 
 		for (int c = 0; c < colorHL2.cols; c++)
 		{
-			if (gauss[r] > AVG_WEIGHT*avg)
+			if (gauss[r] > MAX_WEIGHT * max)
 			{
 				cv::Vec3b inten;
 				inten.val[2] = 255;
@@ -146,7 +141,7 @@ void Wavelet::run(cv::Mat img)
 	
 	std::vector<std::pair<float, cv::Rect>> candidatesRough = findRoughCandidate(morphedHL, startRowsHeights); //morphed
 	candidatesRough = findNonIntCandidate(candidatesRough);
-	if (candidatesRough.size() >= 10) candidatesRough.resize(10);
+	if (candidatesRough.size() >= 10) candidatesRough.resize(10); //keep only first 10 candidates
 
 /*only for debugging*/
 /*************************************************************************************/
@@ -183,49 +178,6 @@ void Wavelet::run(cv::Mat img)
 	});
 
 
-
-/*only for debugging*/
-/*************************************************************************************/
-#pragma region draw_peaks
-	/*std::vector<int> v1;
-	std::vector<int> v2;
-
-	for (int i = 0; i < binarizedHL.rows; i++)
-	{
-		//v1.push_back(vals2[i]);
-		v1.push_back((int)gauss[i]); //v1 smoothed morph
-		v2.push_back(binRS[i]);		//binarized
-	}
-	
-	for (int i = 0; i < peakIDs.size(); i++)
-	{
-		int row1 = sort_indexi(v1)[i];
-		row1 = peakIDs[i];
-		int row2 = sort_indexi(v2)[i];
-
-		for (int c = 0; c < haarHL.cols; c++)
-		{
-			cv::Vec3b inten;
-			inten.val[0] = 255;
-			colorHL.at<cv::Vec3b>(row1, c) = inten; //morphed
-			inten.val[1] = 255;
-			colorHL.at<cv::Vec3b>(row2, c) = inten; //non morphed
-		}
-
-		for (int c = 0; c < img.cols; c++)
-		{
-			cv::Vec3b inten;
-			inten.val[2] = 255;
-			inten.val[1] = mvAvg[row1] * 255 / max;
-			img.at<cv::Vec3b>(2*row1, c) = inten;
-			inten.val[1] = 255;
-			img.at<cv::Vec3b>(2 * row2, c) = inten;
-		}
-	}*/
-#pragma endregion
-/*************************************************************************************/
-
-
 /*only for debugging*/
 /*************************************************************************************/
 	std::vector<cv::Mat> matCandidates;
@@ -237,16 +189,8 @@ void Wavelet::run(cv::Mat img)
 		
 		if(i < count)
 		{
-
-			//int r = 0 + (i + 1)*1.0 / count * 255;
-			//int g = 255 - (i + 1)*1.0 / count * 255;
 			int r = 0;
 			int g = 255;
-
-			/*cv::rectangle(colorHL, candidatesRough[i].second, cv::Scalar(0, g, r));
-			cv::rectangle(colorBinHL, candidatesRough[i].second, cv::Scalar(0, g, r));
-			cv::rectangle(colorMorphHL, candidatesRough[i].second, cv::Scalar(0, g, r));
-			cv::rectangle(img, original, cv::Scalar(0, g, r));*/
             cv::Rect currentRect = candidatesRough[i].second;
 			cv::Rect original = cv::Rect(currentRect.tl().x * 2 - 1, currentRect.tl().y * 2 - 1, currentRect.width * 2 + 2, currentRect.height * 2 + 2);
 
@@ -268,12 +212,6 @@ void Wavelet::run(cv::Mat img)
 				cv::rectangle(colorMorphHL, currentRectEx, cv::Scalar(0, g, r));
 				cv::rectangle(img, originalEx, cv::Scalar(0, g, r));
 				matCandidates.push_back(img(cv::Rect(currentRectEx.tl().x * 2, currentRectEx.tl().y * 2, currentRectEx.width * 2, currentRectEx.height * 2)));
-
-				//ONLY TEMPORARILY
-				//if (i == 0) //extract first candidate
-				//{
-				//	test = img(cv::Rect(currentRectEx.tl().x * 2, currentRectEx.tl().y * 2, currentRectEx.width * 2, currentRectEx.height * 2));
-				//}
 			}
 
 		}
@@ -286,99 +224,15 @@ void Wavelet::run(cv::Mat img)
 
 	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(colorHL, "colorHL");
 	if (DEBUG_LEVEL == 2) ImageViewer::viewImage(colorBinHL, "colorBinHL");
-	//if (DEBUG_LEVEL >= 1) ImageViewer::viewImage(colorMorphHL, "colorMorphHL");
 	if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(img, "orig width candidates");
-	//if (DEBUG_LEVEL >= 0) ImageViewer::viewImage(test, "candidate");
-
-
-	//cv::destroyAllWindows();
-    /*int i = 0;
-	for (auto it = matCandidates.begin(); it != matCandidates.end(); ++it)
-	{
-		cv::Mat src = (*it);
-
-		
-		cv::Mat SRC = src.clone();
-
-		int origRows = src.rows;
-		cv::Mat colVec = SRC.reshape(1, src.rows*src.cols); // change to a Nx3 column vector
-		cv::Mat colVecD, bestLabels, centers;
-		int attempts = 3;
-		int clusts = 5;
-		double eps = 0.001;
-		colVec.convertTo(colVecD, CV_32FC3, 1.0 / 255.0); // convert to floating point
-		double compactness = kmeans(colVecD, clusts, bestLabels, cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, attempts, eps), attempts, cv::KMEANS_PP_CENTERS, centers);
-
-		
-		std::vector<std::pair<cv::Vec3b, uint>> dominantColors = std::vector<std::pair<cv::Vec3b, uint>>(clusts);
-		for (int i = 0; i < clusts; i++)
-		{
-			dominantColors[i] = std::make_pair(cv::Vec3b(centers.at<float>(i, 0) * 255, centers.at<float>(i, 1) * 255, centers.at<float>(i, 2) * 255), 0);
-		}
-
-
-		//repaint image with dominant colors
-		cv::Mat labelsImg = bestLabels.reshape(1, origRows); // single channel image of labels
-		cv::Mat repaint = cv::Mat(src.rows, src.cols, src.type());
-
-
-		for (int r = 0; r < src.rows; r++)
-		{
-			for (int c = 0; c < src.cols; c++)
-			{
-				uint label = labelsImg.at<uint>(r, c);
-				dominantColors[label].second++;
-				float blue, green, red;
-				blue = centers.at<float>(label, 0);
-				green = centers.at<float>(label, 1);
-				red = centers.at<float>(label, 2);
-				repaint.at<cv::Vec3b>(r, c) = cv::Vec3b(blue * 255, green * 255, red * 255); //label in labelsImg.at<uchar>(r,c)
-
-			}
-		}
-
-		std::sort(dominantColors.begin(), dominantColors.end(), [&](std::pair<cv::Vec3b, uint> i1, std::pair<cv::Vec3b, uint> i2)
-		{
-			return i1.second >= i2.second;
-
-		});
-		//ImageViewer::viewImage(repaint, "repaint candidate");
-		
-
-		bool hasGrey = false;
-		//eval dominant colors
-		size_t i = 0;
-		for (auto color : dominantColors)
-		{
-			int max = std::max({color.first[0], color.first[1], color.first[2]});
-			int min = std::min({color.first[0], color.first[1], color.first[2]});
-			//check if color is grey
-			if (max - min <= 10)
-			{
-				hasGrey = true;
-			}
-			if (i == 2)
-				break;
-			i++;
-		}
-
-		if (hasGrey)  ImageViewer::viewImage(src, "candidate real");
-		
-		i++;
-		cv::waitKey(0);
-
-    }*/
 	
 }
 
 
 std::vector<float> Wavelet::gaussFilter(std::vector<int> arr)
 {
-	//float* res = new float[n];
 	std::vector<float> res = std::vector<float>(arr.size(), 0.0);
 	
-	/*res[0] = 0; res[1] = 0; res[2] = 0; res[3] = 0;
-	res[n-1] = 0; res[n-2] = 0; res[n-3] = 0; res[n-4] = 0;*/
 	float sigma = 0.05f;
 	int w = 2;
 
@@ -406,30 +260,9 @@ std::vector<float> Wavelet::gaussFilter(std::vector<int> arr)
 
 }
 
-std::vector<float> Wavelet::movingAvg(std::vector<float> arr)
-{
-	std::vector<float> sums = std::vector<float>(arr.size() + 1, 0.0);
-	std::vector<float> res = std::vector<float>(arr.size(), 0.0);
-
-	float sum = 0;
-	
-	for (size_t i = 1; i < sums.size(); i++)
-	{
-		sum += arr[i - 1];
-		sums[i] = sum;
-	}
-
-	for (size_t i = 3; i < res.size() - 1; i++)
-	{
-		res[i - 1] = (sums[i + 2] - sums[i - 3]) / 5;
-	}
-
-	return res;
-}
 
 std::vector<int> Wavelet::calcRowSums(cv::Mat img)
 {
-	//int* sums = new int[img.rows];
 	std::vector<int> sums = std::vector<int>(img.rows, 0);
  
 	for (size_t r = 0; r < sums.size(); r++)
@@ -443,38 +276,14 @@ std::vector<int> Wavelet::calcRowSums(cv::Mat img)
 		sums[r] = currSum;
 
 	}
-
-	/*for (int r = 0; r < img.rows; r++)
-	{
-		int currSum = 0;
-		for (int c = 0; c < img.cols; c++)
-		{
-			currSum += img.at<uchar>(r, c);
-		}
-
-		sums[r] = currSum;
-	}*/
-
 	return sums;
 }
 
 std::vector<int> Wavelet::calcColSums(cv::Mat img)
 {
-	/*int* sums = new int[img.cols];
-	for (int c = 0; c < img.cols; c++)
-	{
-		int currSum = 0;
-		for (int r = 0; r < img.rows; r++)
-		{
-			currSum += img.at<uchar>(r, c);
-		}
-
-		sums[c] = currSum;
-	}*/
 
 	std::vector<int> sums = std::vector<int>(img.cols, 0);
 
-	//sums[i] = 
 	for (size_t c = 0; c < sums.size(); c++)
 	{
 		int currSum = 0;
@@ -533,7 +342,6 @@ cv::Mat Wavelet::genGreyScale(cv::Mat img)
 		for (int c = 0; c < cols; c++)
 		{
 			cv::Vec3b bgr = img.at<cv::Vec3b>(r, c);
-			//greyScaleImage.at<uchar>(r, c) = (3 * bgr[2] + 6 * bgr[1] +  bgr[0])/10; //using luminosity method
 			greyScaleImage.at<uchar>(r, c) = (bgr[0]);
 		}
 	}
@@ -544,32 +352,16 @@ cv::Mat Wavelet::genGreyScale(cv::Mat img)
 cv::Mat Wavelet::binarize(cv::Mat img)
 {
 	cv::Mat res;
-
-	//otsu
 	cv::threshold(img, res, 0, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
-
 	return res;
-
 }
 
 cv::Mat Wavelet::morph(cv::Mat img)
 {
 	cv::Mat res, temp;
-
-	/*int element_shape = 0;
-	cv::Mat element = cv::getStructuringElement(element_shape, cv::Size(3, 1));
-
-
-	cv::morphologyEx(img, res, 6, element);*/
-
 	int element_shape = 0;
 	cv::Mat element = cv::getStructuringElement(element_shape, cv::Size(3, 1));
-
-
 	cv::morphologyEx(img, res, 6, element);
-
-
-
 	return res;
 }
 
@@ -628,7 +420,6 @@ std::vector<std::pair<int, float>> Wavelet::findPeaks(std::vector<float> arr)
 			if (sign == false) //was negative is postive --> Max
 			{
 				peaks.push_back(std::make_pair(i , arr[i]));
-				//qDebug() << i;
 				sign = true;
 			}
 
@@ -648,7 +439,6 @@ std::pair<int, float> Wavelet::findMaxPeak(std::vector<std::pair<int, float>> pe
 	float max = 0;
 	if (peaks.size() > 0)
 	{
-		//max = arr[peakIDs[0]];
 		max = peaks[0].second;
 	}
 	int maxid = 0;
@@ -696,12 +486,12 @@ float Wavelet::rectRank(cv::Mat img, cv::Rect rect)
 
 }
 
-std::vector<std::pair<int, int>> Wavelet::findThresholdAreas(double avg, std::vector<float> rowSums, bool splitAreas)
+std::vector<std::pair<int, int>> Wavelet::findThresholdAreas(double max, std::vector<float> rowSums, bool splitAreas)
 {
 	std::vector<std::pair<int, int>> startRowsHeights;
 
 	const int maxRectHeight = (int) (MAX_RECT_HEIGHT_RATIO * rowSums.size());
-	float currentWeight = AVG_WEIGHT;
+	float currentWeight = MAX_WEIGHT;
 
 	int currentHeight = 0;
 	int currentRectStart = 0;
@@ -711,7 +501,7 @@ std::vector<std::pair<int, int>> Wavelet::findThresholdAreas(double avg, std::ve
 
 	for (size_t r = 0; r < rowSums.size(); r++)
 	{
-		if (rowSums[r] >= currentWeight*avg)
+		if (rowSums[r] >= currentWeight * max)
 			isInThresh = true;
 		
 
@@ -741,7 +531,7 @@ std::vector<std::pair<int, int>> Wavelet::findThresholdAreas(double avg, std::ve
 			{
 				startRowsHeights.push_back(std::make_pair(r - currentHeight, currentHeight));
 			}
-			currentWeight = AVG_WEIGHT; //reset currentWeight for next retangles;
+			currentWeight = MAX_WEIGHT; //reset currentWeight for next retangles;
 			currentHeight = 0;
 		}
 
@@ -780,7 +570,7 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findRoughCandidate(cv::Mat img,
 
 			
 			float rank = this->rectRank(img, current);
-			if (evalRect(current, rank, img))
+			if (evalRect(current, img))
 				candidates.push_back(std::make_pair(rank, current));
 		}
 	}
@@ -832,77 +622,12 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findNonIntCandidate(std::vector
 
     return res;
 
-    /*int count = 0;
-    for (int i = 0; i < candidates.size(); i++)
-    {
-        std::vector<std::pair<float, cv::Rect>> current_intersecting;
-        cv::Rect currentRect = candidates[i].second;
-        bool intersect = false;
-        for (int k = 0; k < i; k++)
-        {
-            if (this->rectIntersect(candidates[k].second, currentRect))
-            {
-                intersect = true;
-                //current_intersecting
-                break;
-            }
-
-        }
-        if (count < n && !intersect)
-        {
-            res.push_back(candidates[i]);
-            count++;
-        }
-    }*/
-
-    return res;
-
 }
 
 std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey, cv::Mat rankImg,  std::vector<std::pair<float, cv::Rect>> candidates)
 {
 	std::vector<std::pair<float, cv::Rect>> res;
-	/*for (int i = 0; i < candidates.size(); i++)
-	{
-		cv::Rect currentRect = candidates[i].second;
-		float currentWeight = candidates[i].first;
-
-		//reduce width --> first right then left
-		cv::Rect newRect;
-		for (int w = currentRect.width - 1; w >= 1; w--)
-		{
-			cv::Rect newRect = cv::Rect(currentRect.x, currentRect.y, w, currentRect.height);
-			float newWeight = this->rectRank(img, newRect);
-
-			if (newWeight >= currentWeight)
-			{
-				currentRect = newRect;
-				currentWeight = newWeight;
-			}
-			else
-				break;
-		}
-
-		for (int x = currentRect.tl().x; x < currentRect.br().x; x++)
-		{
-			cv::Rect newRect = cv::Rect(cv::Point(x, currentRect.tl().y), currentRect.br());
-			float newWeight = this->rectRank(img, newRect);
-
-			if (newWeight >= currentWeight)
-			{
-				currentRect = newRect;
-				currentWeight = newWeight;
-			}
-			else
-				break;
-
-		}
-
-		res.push_back(std::make_pair(currentWeight, currentRect));
-
-
-	}*/
-
+	
     for (auto pairWeightRect : candidates)
 	{
         cv::Rect currentRect = pairWeightRect.second;
@@ -943,11 +668,8 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 		std::vector<float> gaussColsSums = this->gaussFilter(colsSums);
 		this->print<float>(gaussColsSums);
 
-		int count = std::count(gaussColsSums.begin(), gaussColsSums.end(), 0.0);
-
 		std::vector<std::pair<int, float>> peaks = this->findPeaks(gaussColsSums);
 		std::pair<int, float> maxIDVal = this->findMaxPeak(peaks, gaussColsSums);
-        //int maxID = maxIDVal.first;
 		float max = maxIDVal.second;
 
 
@@ -973,28 +695,12 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 				break;
 			}
 		}
-
-		//std::vector<std::pair<int, int>> startColsWidths = this->findThresholdAreas(candidateHL.cols, avg, gaussColsSums, false);
-
-		/*auto maxIt = std::max_element(startColsWidths.begin(), startColsWidths.end(),
-			[](const std::pair<int, int>& p1, const std::pair<int, int>& p2)
-			{
-				return p1.second < p2.second;
-			}
-		);
-
-		//(*maxit).first = pos   (*maxit).second = width
-
-		for (auto i = startColsWidths.begin(); i != startColsWidths.end(); ++i)
-			qDebug() << (*i).first << " " << (*i).second;
-
-		cv::Rect rect = cv::Rect((*maxIt).first, 0, (*maxIt).second, candidateHL.rows);*/
 		cv::Rect rect = cv::Rect(pos_left, 0, pos_right - pos_left + 1, candidateHL.rows);
 
 		rect += currentRect.tl(); //translate back
 		float weight = this->rectRank(rankImg, rect); 
 
-		if (!evalRect(rect, weight, rankImg)) continue;
+		if (!evalRect(rect, rankImg)) continue;
 		res.push_back(std::make_pair(weight, rect));
 
 		
@@ -1004,14 +710,12 @@ std::vector<std::pair<float, cv::Rect>> Wavelet::findExactCandidate(cv::Mat grey
 }
 
 //returns true if rect satisfies candidate properties
-bool Wavelet::evalRect(cv::Rect rect, float rank, cv::Mat evalImg)
+bool Wavelet::evalRect(cv::Rect rect, cv::Mat evalImg)
 {
 	if (rect.width <= rect.height * 1.5) //doesnt work for usa license plates
 		return false;
 	if (rect.width < rect.height)
 		return false;
-	/*if (rank < 10)
-		return false;*/
 	if (rect.height * GAP_TO_HEIGHT_RATIO >= rect.width)
 		return false;
 	if (rect.height * GAP_TO_HEIGHT_RATIO < 1)
@@ -1026,62 +730,6 @@ bool  Wavelet::rectIntersect(cv::Rect r1, cv::Rect r2)
 	return  (r1 & r2).area();
 
 }
-
-
-cv::Mat Wavelet::gbrHist(cv::Mat img)
-{
-	/// Separate the image in 3 places ( B, G and R )
-	std::vector<cv::Mat> bgr_planes;
-	cv::split(img, bgr_planes);
-
-	/// Establish the number of bins
-	int histSize = 256;
-
-	/// Set the ranges ( for B,G,R) )
-	float range[] = {0, 256};
-	const float* histRange = {range};
-
-	bool uniform = true; bool accumulate = false;
-
-	cv::Mat b_hist, g_hist, r_hist;
-
-	/// Compute the histograms:
-	calcHist(&bgr_planes[0], 1, 0, cv::Mat(), b_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&bgr_planes[1], 1, 0, cv::Mat(), g_hist, 1, &histSize, &histRange, uniform, accumulate);
-	calcHist(&bgr_planes[2], 1, 0, cv::Mat(), r_hist, 1, &histSize, &histRange, uniform, accumulate);
-
-	// Draw the histograms for B, G and R
-	int hist_w = 512; int hist_h = 400;
-	int bin_w = cvRound((double) hist_w / histSize);
-
-	cv::Mat histImage(hist_h, hist_w, CV_8UC3, cv::Scalar(0, 0, 0));
-
-	/// Normalize the result to [ 0, histImage.rows ]
-	normalize(b_hist, b_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-	normalize(g_hist, g_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-	normalize(r_hist, r_hist, 0, histImage.rows, cv::NORM_MINMAX, -1, cv::Mat());
-
-	/// Draw for each channel
-	for (int i = 1; i < histSize; i++)
-	{
-		cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(b_hist.at<float>(i - 1))),
-			cv::Point(bin_w*(i), hist_h - cvRound(b_hist.at<float>(i))),
-			cv::Scalar(255, 0, 0), 2, 8, 0);
-		cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(g_hist.at<float>(i - 1))),
-			cv::Point(bin_w*(i), hist_h - cvRound(g_hist.at<float>(i))),
-			cv::Scalar(0, 255, 0), 2, 8, 0);
-		cv::line(histImage, cv::Point(bin_w*(i - 1), hist_h - cvRound(r_hist.at<float>(i - 1))),
-			cv::Point(bin_w*(i), hist_h - cvRound(r_hist.at<float>(i))),
-			cv::Scalar(0, 0, 255), 2, 8, 0);
-	}
-
-	/// Display
-	/*namedWindow("calcHist Demo", CV_WINDOW_AUTOSIZE);
-	imshow("calcHist Demo", histImage);*/
-	return histImage;
-
-}
-
 
 template<typename T> void Wavelet::print(std::vector<T> arr)
 {
