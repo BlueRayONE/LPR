@@ -301,12 +301,12 @@ std::tuple<bool, float, float> MSER::sameSize(std::vector<cv::Rect> innerElement
 
 	int minHeight = -1; int maxHeight = -1;
 	int minWidth = -1; int maxWidth = -1;
-	float avgHeight = 0; float avgWidth = 0;
+	double avgHeight = 0; double avgWidth = 0;
 
-	float leftBoundary0 = meanHeight - 2 * stdevHeight;
-	float rightBoundary0 = meanHeight + 2 * stdevHeight;
-	float leftBoundary1 = meanWidth - 2 * stdevWidth;
-	float rightBoundary1 = meanWidth + 2 * stdevWidth;
+	double leftBoundary0 = meanHeight - 2 * stdevHeight;
+	double rightBoundary0 = meanHeight + 2 * stdevHeight;
+	double leftBoundary1 = meanWidth - 2 * stdevWidth;
+	double rightBoundary1 = meanWidth + 2 * stdevWidth;
 
 	size_t count = 0;
 	for (auto elem : innerElements)
@@ -355,7 +355,7 @@ std::vector<std::pair<cv::Rect, int>> MSER::getNumInnerElements(std::vector<cv::
 			}
 		}
 
-		if (count > 0)
+		if (count > 2)
 		{
 			rectInnerElements.push_back(std::make_pair(rect_p, count));
 		}
@@ -408,7 +408,7 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 
 			}
 			//swap roles
-			if (intersectArea(elem1.first, elem2.first) == elem1.first.area())
+			else if (intersectArea(elem1.first, elem2.first) == elem1.first.area())
 			{
 
 				if (elem1.second == elem2.second)
@@ -422,6 +422,14 @@ std::vector<cv::Rect> MSER::postDiscardBBoxes_p(std::vector<cv::Rect> boxes_p, s
 					res[j] = elem2;
 				}
 
+			}
+			else if ((intersectArea(elem1.first, elem2.first))) //overlapping but not real inner element
+			{
+				if (elem1.second > elem2.second)
+					res[j] = elem1;
+				else
+					res[j] = elem2;
+				intersect = true;
 			}
 		}
 
