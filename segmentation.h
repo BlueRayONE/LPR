@@ -11,7 +11,7 @@
 class Segmentation
 {
 public:
-    Segmentation(const cv::Mat& image, const std::string filename);
+    Segmentation(const cv::Mat& image);
     ~Segmentation();
 
     int* computeHorizontalHistogram(const cv::Mat& image, NiblackVersion version);

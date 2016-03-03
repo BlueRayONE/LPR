@@ -20,7 +20,7 @@ vector<string> Classification::characterRecognition(const vector<cv::Mat> plates
         cv::Mat plate = plates.at(k);
         vector<cv::Mat> chars;
 
-        Segmentation segmentation(plate, filename);
+        Segmentation segmentation(plate);
         segmentation.cropImage(plate);
 
         if(!projection){
@@ -48,8 +48,8 @@ vector<string> Classification::characterRecognition(const vector<cv::Mat> plates
                 cout << confidences.size() << endl;
                 cout <<  "Char " + to_string(i) << " " << confidences.at(j) << " " << words.at(j) << endl;
             }
-            results.push_back(result);
         }
+        results.push_back(result);
     }
 
     return results;

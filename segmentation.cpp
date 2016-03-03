@@ -15,7 +15,7 @@
 using namespace cv;
 using namespace std;
 
-Segmentation::Segmentation(const Mat& image, string filename): originalImage(image), name(filename){
+Segmentation::Segmentation(const Mat& image): originalImage(image){
 }
 
 Segmentation::~Segmentation(){
@@ -328,22 +328,31 @@ Mat Segmentation::cropImage(const Mat& image){
     // Filter the image to sharpen the edges and remove noise
     Mat filteredImage = Mat(image.rows, image.cols, image.type());
     bilateralFilter(image, filteredImage, 9, 100, 1000);
+
+#ifdef DEV
     imwrite("Filtered.png", filteredImage);
     cout << "Nach dem Filtern" << endl;
+#endif
 
     // Rotate the image
     Mat rotated = rotate(filteredImage);
+#ifdef DEV
     imwrite("Rotated.png", rotated);
     cout << "Nach dem Rotieren" << endl;
     imwrite("RotatedBinary.png", computeBinaryImage(rotated, WOLFJOLION, WINDOW_SIZE));
+#endif
 
     // Crop horizontal
     Mat horizontalCropped = cropHorizontal(rotated);
+#ifdef DEV
     imwrite("HorizontalCropped.png", horizontalCropped);
     cout << "Nach dem horizontal cropping" << endl;
+#endif
 
     if(horizontalCropped.rows != 0 && horizontalCropped.cols != 0){
-        //imshow("Rotated horizontal cropped", horizontalCropped);
+#ifdef DEV
+        imshow("Rotated horizontal cropped", horizontalCropped);
+#endif
 
         // make all blue parts black
         Mat hsvImage;
@@ -371,31 +380,38 @@ Mat Segmentation::cropImage(const Mat& image){
             }
         }
         cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
+#ifdef DEV
         imwrite("Blackened.png", horizontalCropped);
         cout << "Nach dem Schwarzmachen" << endl;
-
+#endif
 
         double angle = computeAngle(horizontalCropped, false);
         double slope = tan(angle*PI/180);
         Mat sheared = shear(horizontalCropped, slope);
+#ifdef DEV
         imwrite("Sheared.png", sheared);
         cout << "Nach dem Scheren" << endl;
-
+#endif
 
         // Crop at the left and right side
         int start = getHorizontalStart(sheared);
         int end = getHorizontalEnd(sheared);
         if(start < end){
             croppedImage = sheared(Rect(start, 0, end-start, horizontalCropped.rows));
+#ifdef DEV
             cout << "Nach dem gesamten Cropping" << endl;
+#endif
         } else {
             croppedImage = sheared;
+#ifdef DEV
             cout << "Vertical cropping failed" << endl;
+#endif
         }
         cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 60), croppedBinaryImage, CV_GRAY2BGR);
+#ifdef DEV
         imwrite("Cropped.png", croppedImage);
         imwrite("CroppedBinary.png", croppedBinaryImage);
-
+#endif
         return croppedImage;
 
     } else {

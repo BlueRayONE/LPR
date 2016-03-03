@@ -135,13 +135,13 @@ void MainWindow::on_btn_localize_clicked()
 
 void MainWindow::on_btn_crop_clicked()
 {
-    Segmentation segmentation(originalImage, name);
+    Segmentation segmentation(originalImage);
     segmentation.cropImage(originalImage);
 }
 
 void MainWindow::on_btn_segment_clicked()
 {
-    Segmentation segmentation(originalImage, name);
+    Segmentation segmentation(originalImage);
     cv::Mat cropped = segmentation.cropImage(originalImage);
     if(ui->radio_projection->isChecked())
     {

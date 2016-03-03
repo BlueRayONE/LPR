@@ -16,7 +16,6 @@ public:
     std::vector<std::string> characterRecognition(const std::vector<cv::Mat> plates, bool projection);
 
     cv::Mat originalImage;
-    std::string filename;
 };
 
 #endif // CLASSIFICATION_HPP
