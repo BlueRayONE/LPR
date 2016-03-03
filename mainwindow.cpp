@@ -162,6 +162,9 @@ void MainWindow::on_btn_segment_clicked()
 
 void MainWindow::on_btn_recognize_clicked()
 {
+    MSER mser(originalImage);
+    std::vector<cv::Mat> plates = mser.run();
+
     Classification classification(originalImage, name);
-    classification.characterRecognition(originalImage);
+    classification.characterRecognition(plates);
 }
