@@ -308,13 +308,8 @@ Mat Segmentation::shear(const Mat& image, double slope){
 }
 
 Mat Segmentation::cropImage(const Mat& image){
-    // Histogram Equalization of Color image
-    Mat equalizedImage = equalizeImage(image);
-    imwrite("Equalized.png", equalizedImage);
-    cout << "Nach equalization" << endl;
-
     // Filter the image to sharpen the edges and remove noise
-    Mat filteredImage = Mat(equalizedImage.rows, equalizedImage.cols, equalizedImage.type());
+    Mat filteredImage = Mat(image.rows, image.cols, image.type());
     bilateralFilter(image, filteredImage, 9, 100, 1000);
     imwrite("Filtered.png", filteredImage);
     cout << "Nach dem Filtern" << endl;
