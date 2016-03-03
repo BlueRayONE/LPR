@@ -93,10 +93,8 @@ void MainWindow::on_btn_localize_clicked()
     {
 
 		licencePlateRecognition a = licencePlateRecognition();
-		cv::Mat imgX = originalImage.clone();
-		//cv::Mat imgY = originalImage.clone();
-
-		cv::Mat Plate = a.pca(imgX);
+		cv::Mat cloned = originalImage.clone();
+		a.pca(cloned);
     }
     else if(ui->radio_mser->isChecked())
     {
