@@ -8,6 +8,8 @@
 #include <fstream>
 #include <string>
 
+//#define DEV;
+
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent) :
@@ -148,9 +150,13 @@ void MainWindow::on_btn_segment_clicked()
         for(int i=0; i < segmentation.chars.size(); i++){
             char* title = new char[128];
             sprintf(title,"Buchstabe%i",i);
-            ImageViewer::viewImage(segmentation.chars[i], title, 400);
+            #ifdef DEV
+                 ImageViewer::viewImage(segmentation.chars[i], title, 400);
+            #endif
             strcat(title,".jpg");
-            imwrite(title, segmentation.chars[i]);
+            #ifdef DEV
+                imwrite(title, segmentation.chars[i]);
+            #endif
         }
     }
     else
