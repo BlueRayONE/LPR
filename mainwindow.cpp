@@ -166,4 +166,9 @@ void MainWindow::on_btn_recognize_clicked()
 {
     Classification classification(originalImage, name);
     classification.characterRecognition(originalImage);
+
+    QMessageBox::information(
+        this,
+        tr("Licenseplates"),
+        tr("bla bla blubb \n bla bla") );
 }
