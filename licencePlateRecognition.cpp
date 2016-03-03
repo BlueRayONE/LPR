@@ -125,7 +125,7 @@ Mat licencePlateRecognition::pca(Mat src){
 	//imwrite("Ausarbeitung/PCA/DSC03001/c2.jpg", c2);
 	//imwrite("Ausarbeitung/PCA/DSC03001/c1.jpg", c1);
 	//imwrite("Ausarbeitung/PCA/DSC03001/dst.jpg", dst);
-	//imwrite("Ausarbeitung/PCA/DSC03001/dst2.jpg", dst2);
+    //imwrite("Ausarbeitung/PCA/DSC03001/dst2.jpg", dst2);
 	//imwrite("Ausarbeitung/PCA/DSC03001/trashh.jpg", trashh);
 	//imwrite("Ausarbeitung/PCA/DSC03001/trashhgray.jpg", trashhgray);
 	//imwrite("Ausarbeitung/PCA/DSC03001/plate.jpg", plate);
@@ -566,10 +566,10 @@ vector<double> licencePlateRecognition::getRectangleArroundShape(Mat src, vector
 		if (data[i].y < minY) minY = data[i].y;
 	}
 
-	line(src, cv::Point(minX, minY), Point(minX, maxY), Scalar(255, 0, 0), 1, CV_AA); //oben -
-	line(src, cv::Point(minX, maxY), Point(maxX, maxY), Scalar(255, 0, 0), 1, CV_AA); //hinten |
-	line(src, cv::Point(maxX, minY), Point(maxX, maxY), Scalar(255, 0, 0), 1, CV_AA); //unten _
-	line(src, cv::Point(maxX, minY), Point(minX, minY), Scalar(255, 0, 0), 1, CV_AA); //vorne |
+    line(src, cv::Point(minX, minY), Point(minX, maxY), Scalar(255, 0, 0), 2, CV_AA); //oben -
+    line(src, cv::Point(minX, maxY), Point(maxX, maxY), Scalar(255, 0, 0), 2, CV_AA); //hinten |
+    line(src, cv::Point(maxX, minY), Point(maxX, maxY), Scalar(255, 0, 0), 2, CV_AA); //unten _
+    line(src, cv::Point(maxX, minY), Point(minX, minY), Scalar(255, 0, 0), 2, CV_AA); //vorne |
 
 	// Calculate the area of each contour
 	vector<double> scores;
