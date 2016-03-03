@@ -31,6 +31,8 @@ vector<string> Classification::characterRecognition(const vector<cv::Mat> plates
             chars = segmentation.chars;
         }
 
+        bool numbers = false;
+        bool finished = false;
         string result = "";
         for(int i = 0; i < chars.size(); i++){
             cv::Mat character = chars.at(i);
@@ -43,7 +45,19 @@ vector<string> Classification::characterRecognition(const vector<cv::Mat> plates
             vector<float> confidences;
             tesseract->run(character, output, &boxes, &words, &confidences);
             output.erase(std::remove(output.begin(), output.end(), '\n'), output.end());
-            result.append(output);
+
+            int asciicode = (output.c_str())[0];
+            if(asciicode < 58 && asciicode != 32){
+                numbers = true;
+            }
+
+            if(numbers){
+                if(asciicode < 58)
+                    result.append(output);
+            } else {
+                result.append(output);
+            }
+
             for(int j = 0; j < confidences.size(); j++){
                 cout << confidences.size() << endl;
                 cout <<  "Char " + to_string(i) << " " << confidences.at(j) << " " << words.at(j) << endl;
