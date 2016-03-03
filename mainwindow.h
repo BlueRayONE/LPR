@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QFileDialog>
+#include <QMessageBox>
 
 #include "ImageReader.hpp"
 #include "ImageViewer.h"
