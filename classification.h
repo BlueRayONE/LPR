@@ -13,7 +13,7 @@ class Classification
 {
 public:
     Classification(const cv::Mat& image, std::string filename);
-    void characterRecognition(const cv::Mat& image);
+    std::vector<std::string> characterRecognition(const std::vector<cv::Mat> plates);
 
     cv::Mat originalImage;
     std::string filename;
