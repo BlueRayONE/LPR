@@ -23,9 +23,11 @@ public:
 	/* Destruktor */
 	~licencePlateRecognition();
 
+	std::vector<std::vector<cv::Point>>  pca(cv::Mat src, int graytresh, int contourPointsTreshhMin,
+		int contourPointsTreshhMax, int contourAreaTreshhMin, int contourAreaTreshhMax);
 
 
-//private:
+private:
 	/* Methode berechnet Sobelmaske in x Richtung und gibt den Wert zurück
 	@param greyImg Grauwertbild welches bearbeitet werden soll
 	@param x koordinate
@@ -42,7 +44,6 @@ public:
 	void identidy3x30(cv::Mat src, cv::Mat dst);
 
 	void mergeResults(cv::Mat c1, cv::Mat c2, cv::Mat c3, cv::Mat dst);
-	std::vector<std::vector<cv::Point>>  pca(cv::Mat src, int graytresh, int contourPointsTreshhMin, int contourPointsTreshhMax, int contourAreaTreshhMin, int contourAreaTreshhMax);
 	
 	int mask3x30(cv::Mat src, int x, int y);
 	int sameColor(cv::Mat src, int x, int y);
@@ -58,7 +59,5 @@ public:
 
 	cv::Mat pca(cv::Mat src);
 	cv::Mat resizeImg(cv::Mat src);
-
-	//void objectDetectionSURF(cv::Mat object, cv::Mat plate);
 };
 
