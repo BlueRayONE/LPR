@@ -19,6 +19,7 @@ void Classification::characterRecognition(const cv::Mat& image){
     vector<cv::Mat> plates = mser.run();
     cv::Mat plate = plates.at(0);
 
+    cv::imwrite("LocalizedPlate.png", plate);
     Segmentation segmentation(plate, filename);
     segmentation.cropImage(plate);
     Segmentation_MSER seg_mser = Segmentation_MSER(segmentation.croppedImage);
@@ -34,8 +35,7 @@ void Classification::characterRecognition(const cv::Mat& image){
         cv::Mat character = chars.at(i);
 
         //Mat binchar = segmentation.computeBinaryImage(character, WOLFJOLION, 30);
-
-        cv::imshow(to_string(i), character);
+        //cv::imshow(to_string(i), character);
         string output;
         vector<cv::Rect> boxes;
         vector<string> words;
