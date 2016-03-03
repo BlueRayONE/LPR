@@ -8,22 +8,28 @@
 using namespace std;
 using namespace cv::text;
 
-Classification::Classification(const cv::Mat& image, string filename) : originalImage(image), filename(filename)
-{
-
+Classification::Classification(){
 }
 
 
-vector<string> Classification::characterRecognition(const vector<cv::Mat> plates){
+vector<string> Classification::characterRecognition(const vector<cv::Mat> plates, bool projection){
     cv::Ptr<OCRTesseract> tesseract = OCRTesseract::create("/usr/local/share/tessdata", "deu2", NULL, 0, 10);
     vector<string> results;
 
     for(int k = 0; k < plates.size(); k++){
         cv::Mat plate = plates.at(k);
+        vector<cv::Mat> chars;
+
         Segmentation segmentation(plate, filename);
         segmentation.cropImage(plate);
-        Segmentation_MSER seg_mser = Segmentation_MSER(segmentation.croppedImage);
-        vector<cv::Mat> chars = seg_mser.findChars();
+
+        if(!projection){
+            Segmentation_MSER seg_mser = Segmentation_MSER(segmentation.croppedImage);
+            chars = seg_mser.findChars();
+        } else {
+            segmentation.findChars();
+            chars = segmentation.chars;
+        }
 
         string result = "";
         for(int i = 0; i < chars.size(); i++){
