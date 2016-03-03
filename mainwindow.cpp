@@ -147,8 +147,10 @@ void MainWindow::on_btn_segment_clicked()
 
         for(int i=0; i < segmentation.chars.size(); i++){
             char* title = new char[128];
-            sprintf(title,"Buchstabe Nr. %i",i);
+            sprintf(title,"Buchstabe%i",i);
             ImageViewer::viewImage(segmentation.chars[i], title, 400);
+            strcat(title,".jpg");
+            imwrite(title, segmentation.chars[i]);
         }
     }
     else
