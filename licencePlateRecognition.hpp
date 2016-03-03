@@ -23,8 +23,7 @@ public:
 	/* Destruktor */
 	~licencePlateRecognition();
 
-	std::vector<std::vector<cv::Point>>  pca(cv::Mat src, int graytresh, int contourPointsTreshhMin,
-		int contourPointsTreshhMax, int contourAreaTreshhMin, int contourAreaTreshhMax);
+    cv::Mat getPlate(cv::Mat src);
 
 
 private:
@@ -57,7 +56,8 @@ private:
 	std::vector<double> getFittingRectangleArroundShape(cv::Mat src, std::vector<cv::Point> data);
 	cv::Mat cutPlate(cv::Mat src, std::vector<cv::Point> data);
 
-	cv::Mat pca(cv::Mat src);
+    std::vector<std::vector<cv::Point>>  pca(cv::Mat src, int graytresh, int contourPointsTreshhMin,
+        int contourPointsTreshhMax, int contourAreaTreshhMin, int contourAreaTreshhMax);
 	cv::Mat resizeImg(cv::Mat src);
 };
 

@@ -1,6 +1,6 @@
 #include "licencePlateRecognition.hpp"
 
-#define DEV
+//#define DEV
 
 using namespace std;
 using namespace cv;
@@ -15,7 +15,7 @@ licencePlateRecognition::~licencePlateRecognition()
 
 
 
-Mat licencePlateRecognition::pca(Mat src){
+Mat licencePlateRecognition::getPlate(Mat src){
 
 	Mat smalImg = resizeImg(src);
 
@@ -115,7 +115,7 @@ Mat licencePlateRecognition::pca(Mat src){
 	cv::imshow("c3", c3);
 	cv::imshow("c2", c2);
 	cv::imshow("c1", c1);
-	cv::imshow("dst2", dst2);
+    cv::imshow("dst", dst);
 	cv::imshow("trashh", trashh);
 	cv::imshow("trashhgray", trashhgray);
 
@@ -129,7 +129,7 @@ Mat licencePlateRecognition::pca(Mat src){
 	//imwrite("Ausarbeitung/PCA/DSC03001/plate.jpg", plate);
 #endif
 
-	cv::imshow("dst", dst);
+    cv::imshow("dst2", dst2);
 	cv::imshow("plate", plate);
 	return plate;
 }

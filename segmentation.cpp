@@ -504,9 +504,11 @@ int Segmentation::getHorizontalEnd(const Mat& image){
     for(int i = middleRow; i < width; i++){
         int currentValue = horizontalHistogram[i];
 
-        if(currentValue > maxValue){
+        indexAtMax = i;
+        if(currentValue == image.rows){
             maxValue = currentValue;
-            indexAtMax = i;
+            //indexAtMax = i;
+            return indexAtMax;
         }
     }
     delete horizontalHistogram;
