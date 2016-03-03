@@ -135,6 +135,8 @@ void MainWindow::on_btn_crop_clicked()
 {
     Segmentation segmentation(originalImage);
     segmentation.cropImage(originalImage);
+    cv::imshow("Cropped", segmentation.croppedImage);
+
 }
 
 void MainWindow::on_btn_segment_clicked()
