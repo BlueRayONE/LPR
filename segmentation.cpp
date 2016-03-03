@@ -241,9 +241,11 @@ double Segmentation::computeAngle(const Mat& image, bool horizontal){
         line(cdst, Point(l[0], l[1]), Point(l[2], l[3]), Scalar(255,0,0), 3, CV_AA);
     }
 
-    //if(horizontal)
+    if(horizontal)
+        imwrite("RotatedWithLine.png", cdst);
         //imshow("Detect horizontal lines", cdst);
-    //else
+    else
+        imwrite("ShearedWithLine.png", cdst);
         //imshow("Detect vertical lines", cdst);
 
 
@@ -306,28 +308,22 @@ Mat Segmentation::shear(const Mat& image, double slope){
 }
 
 Mat Segmentation::cropImage(const Mat& image){
-    // Histogram Equalization of Color image
-    Mat equalizedImage = equalizeImage(image);
-    cout << "Nach equalization" << endl;
-
     // Filter the image to sharpen the edges and remove noise
-    Mat filteredImage = Mat(equalizedImage.rows, equalizedImage.cols, equalizedImage.type());
+    Mat filteredImage = Mat(image.rows, image.cols, image.type());
     bilateralFilter(image, filteredImage, 9, 100, 1000);
+    imwrite("Filtered.png", filteredImage);
     cout << "Nach dem Filtern" << endl;
 
     // Rotate the image
     Mat rotated = rotate(filteredImage);
-    //imshow("Rotiert", rotated);
+    imwrite("Rotated.png", rotated);
     cout << "Nach dem Rotieren" << endl;
-    //imshow("Nach dem Rotieren", computeBinaryImage(rotated, WOLFJOLION, WINDOW_SIZE));
-
+    imwrite("RotatedBinary.png", computeBinaryImage(rotated, WOLFJOLION, WINDOW_SIZE));
 
     // Crop horizontal
     Mat horizontalCropped = cropHorizontal(rotated);
+    imwrite("HorizontalCropped.png", horizontalCropped);
     cout << "Nach dem horizontal cropping" << endl;
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Vertical.txt' with linespoint\"");
-    //system("gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/Horizontal.txt' with linespoint\"");
-
 
     if(horizontalCropped.rows != 0 && horizontalCropped.cols != 0){
         //imshow("Rotated horizontal cropped", horizontalCropped);
@@ -347,7 +343,7 @@ Mat Segmentation::cropImage(const Mat& image){
             pair<int,int> h, s, v;
             h.first = 90;
             h.second = 130;
-            s.first = 40/100.0 * 255;
+            s.first = 50/100.0 * 255;
             s.second = 255;
             v.first = 60/100.0 * 255;
             v.second = 255;
@@ -358,14 +354,14 @@ Mat Segmentation::cropImage(const Mat& image){
             }
         }
         cvtColor(hsvImage, horizontalCropped, CV_HSV2BGR);
-        //imshow("blue to black", horizontalCropped);
+        imwrite("Blackened.png", horizontalCropped);
         cout << "Nach dem Schwarzmachen" << endl;
 
 
         double angle = computeAngle(horizontalCropped, false);
         double slope = tan(angle*PI/180);
         Mat sheared = shear(horizontalCropped, slope);
-        //imshow("Sheared", sheared);
+        imwrite("Sheared.png", sheared);
         cout << "Nach dem Scheren" << endl;
 
 
@@ -374,17 +370,14 @@ Mat Segmentation::cropImage(const Mat& image){
         int end = getHorizontalEnd(sheared);
         if(start < end){
             croppedImage = sheared(Rect(start, 0, end-start, horizontalCropped.rows));
-            //imshow("Cropped binary image", croppedBinaryImage);
-            //imshow("Cropped Image", croppedImage);
             cout << "Nach dem gesamten Cropping" << endl;
         } else {
             croppedImage = sheared;
-            //imshow("Cropped binary image", croppedBinaryImage);
             cout << "Vertical cropping failed" << endl;
         }
         cvtColor(computeBinaryImage(croppedImage, WOLFJOLION, 60), croppedBinaryImage, CV_GRAY2BGR);
-        imwrite("Cropped/" + name, croppedImage);
-        imwrite("Cropped_Binary/" + name, croppedBinaryImage);
+        imwrite("Cropped.png", croppedImage);
+        imwrite("CroppedBinary.png", croppedBinaryImage);
 
         return croppedImage;
 
@@ -420,8 +413,8 @@ void Segmentation::plotArray(int* array, int length, string filename, bool rm, b
     char* shellCmd = new char[256];
 
     shellCmd[0]=0;
-    strcat(shellCmd,"gnuplot -p -e \"plot '/home/marius/Sciebo/Studium/9_WS15-16/3_CV-Praktikum/build-LPR-Desktop-Debug/");
-    //gnuPlotCmd = gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/";
+    //strcat(shellCmd,"gnuplot -p -e \"plot '/home/marius/Sciebo/Studium/9_WS15-16/3_CV-Praktikum/build-LPR-Desktop-Debug/");
+    strcat(shellCmd,"gnuplot -p -e \"plot '/home/alex/Documents/build-LPR-Desktop_Qt_5_5_1_GCC_64bit-Debug/");
     const char* tmp = filename.c_str();
     strcat(shellCmd,tmp);
     strcat(shellCmd,"' with linespoint\"");
@@ -486,7 +479,7 @@ int Segmentation::getHorizontalEnd(const Mat& image){
 int Segmentation::getVerticalStart(const Mat& image){
     int* verticalHistogram = computeVerticalHistogram(image);
     //very important: don't mix cols with rows -> bad results
-    plotArray(verticalHistogram, image.rows, "Vertical.txt",false,false);
+    plotArray(verticalHistogram, image.rows, "Vertical.txt",false,true);
 
     int height = image.rows;
     int middle = height/2;
