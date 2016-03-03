@@ -168,11 +168,32 @@ void MainWindow::on_btn_segment_clicked()
 
 void MainWindow::on_btn_recognize_clicked()
 {
-    MSER mser(originalImage);
-    std::vector<cv::Mat> plates = mser.run();
+    vector<cv::Mat> plates;
+    if(ui->radio_mser->isChecked()){
+        MSER mser(originalImage);
+        plates = mser.run();
+    }
 
-    Classification classification(originalImage, name);
-    classification.characterRecognition(plates);
+    if(ui->radio_pca->isChecked()){
+        licencePlateRecognition a = licencePlateRecognition();
+        cv::Mat cloned = originalImage.clone();
+        cv::Mat plate = a.pca(cloned);
+        plates.push_back(plate);
+    }
+
+    Classification classification;
+    vector<string> recognized;
+    if(ui->radio_mser_seg->isChecked()){
+        recognized = classification.characterRecognition(plates, false);
+    }
+
+    if(ui->radio_projection->isChecked()){
+        recognized = classification.characterRecognition(plates, true);
+    }
+
+    for(string sample : recognized){
+        cout << sample << endl;
+    }
 
     QMessageBox::information(
         this,
