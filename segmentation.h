@@ -21,6 +21,7 @@ public:
     bool findChars();
 
     bool isBadge(const cv::Mat& imageSegment);
+    bool isBadgeDetail(const cv::Mat& imageSegment, bool reverse);
     int findChange(int *horizontalHistogram, int start, int maxPos);
     int findValley(int *horizontalHistogram, int size, int position, int thresholdValley);
     int findPeak(int *horizontalHistogram, int size, int position, int thresholdPeak);

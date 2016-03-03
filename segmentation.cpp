@@ -10,6 +10,8 @@
 #define PI 3.14159265
 #define WINDOW_SIZE 45
 
+//#define DEV;
+
 using namespace cv;
 using namespace std;
 
@@ -33,7 +35,9 @@ bool Segmentation::findChars()
 
     int* horizontalHistogram = computeHorizontalHistogram(croppedImage, WOLFJOLION);
 
-    plotArray(horizontalHistogram, size, "horizontalFULL.txt",false,true);
+    #ifdef DEV
+        plotArray(horizontalHistogram, size, "horizontalFULL.txt",false,true);
+    #endif
 
     for(int charNo=0; charNo<11; charNo++){
         if(rightPos >= size-10) break;
@@ -88,10 +92,21 @@ bool Segmentation::findChars()
 
 bool Segmentation::isBadge(const cv::Mat& imageSegment)
 {
+    if(isBadgeDetail(imageSegment,true)){
+        return true;
+    }else{
+        return isBadgeDetail(imageSegment,false);
+    }
+}
+
+bool Segmentation::isBadgeDetail(const cv::Mat& imageSegment, bool reverse)
+{
     int* verticalHistogram = computeVerticalHistogram(imageSegment); //Bild von oben nach unten    
 
-    verticalHistogram = reverseArray(verticalHistogram, 0,imageSegment.rows-1); //jetzt von unten nach oben
-    plotArray(verticalHistogram, imageSegment.rows, "badgeProj.txt",false,true);
+    if(reverse) verticalHistogram = reverseArray(verticalHistogram, 0,imageSegment.rows-1); //jetzt von unten nach oben
+    #ifdef DEV
+        plotArray(verticalHistogram, imageSegment.rows, "badgeProj.txt",false,true);
+    #endif
 
     int point1 = findPeak(verticalHistogram,imageSegment.rows-1,0,3);
     if(point1 >= 0) //evtl -1 od. -2 wenn nix gefunden wurde
@@ -151,7 +166,9 @@ int Segmentation::findPeak(int *histogram, int size, int position, int threshold
     int result = -1;
     int i;
 
-    plotArray(histogram, size, "findPeak.txt",false,false);
+    #ifdef DEV
+        plotArray(histogram, size, "findPeak.txt",false,false);
+    #endif
 
     for(i=position; i < size; i++){ //Punkt finden der Schwellwert überschreitet
         if(histogram[i] >= thresholdPeak){ //lok. Maximum finden
@@ -435,7 +452,9 @@ int Segmentation::getHorizontalStart(const Mat& image){
     int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
     int width = image.cols;
     int middleRow = width/2;
-    plotArray(horizontalHistogram, image.cols, "Horizontal.txt",false,false);
+    #ifdef DEV
+        plotArray(horizontalHistogram, image.cols, "Horizontal.txt",false,false);
+    #endif
 
     int maxValue = 0;
     int indexAtMax = 0;
@@ -458,7 +477,9 @@ int Segmentation::getHorizontalEnd(const Mat& image){
     int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
     int width = image.cols;
     int middleRow = width/2;
-    plotArray(horizontalHistogram, image.cols, "Horizontal.txt",false,false);
+    #ifdef DEV
+        plotArray(horizontalHistogram, image.cols, "Horizontal.txt",false,false);
+    #endif
 
     int maxValue = 0;
     int indexAtMax = 0;
@@ -479,7 +500,9 @@ int Segmentation::getHorizontalEnd(const Mat& image){
 int Segmentation::getVerticalStart(const Mat& image){
     int* verticalHistogram = computeVerticalHistogram(image);
     //very important: don't mix cols with rows -> bad results
-    plotArray(verticalHistogram, image.rows, "Vertical.txt",false,true);
+    #ifdef DEV
+        plotArray(verticalHistogram, image.rows, "Vertical.txt",false,true);
+    #endif
 
     int height = image.rows;
     int middle = height/2;
@@ -527,7 +550,9 @@ int Segmentation::getVerticalStart(const Mat& image){
 int Segmentation::getVerticalEnd(const Mat& image){
     int* verticalHistogram = computeVerticalHistogram(image);
     //very important: don't mix cols with rows -> bad results
-    plotArray(verticalHistogram, image.rows, "Vertical.txt",false,false);
+    #ifdef DEV
+        plotArray(verticalHistogram, image.rows, "Vertical.txt",false,false);
+    #endif
 
     int height = image.rows;
     int middle = height/2;
