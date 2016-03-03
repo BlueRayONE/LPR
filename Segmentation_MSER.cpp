@@ -24,7 +24,7 @@ std::vector<cv::Mat> Segmentation_MSER::findChars()
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box);
-		//cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 0, 255), 1);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 0, 255), 1);
 	}
 
 	bbox = Segmentation_MSER::discardOverlapping(bbox);
@@ -32,7 +32,7 @@ std::vector<cv::Mat> Segmentation_MSER::findChars()
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box);
-		//cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 1);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 1);
 	}
 
 	bbox = Segmentation_MSER::discardOutlier(bbox);
