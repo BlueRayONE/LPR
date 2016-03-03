@@ -94,7 +94,7 @@ void MainWindow::on_btn_localize_clicked()
 
 		licencePlateRecognition a = licencePlateRecognition();
 		cv::Mat cloned = originalImage.clone();
-		a.pca(cloned);
+        a.getPlate(cloned);
     }
     else if(ui->radio_mser->isChecked())
     {
@@ -177,7 +177,7 @@ void MainWindow::on_btn_recognize_clicked()
     if(ui->radio_pca->isChecked()){
         licencePlateRecognition a = licencePlateRecognition();
         cv::Mat cloned = originalImage.clone();
-        cv::Mat plate = a.pca(cloned);
+        cv::Mat plate = a.getPlate(cloned);
         plates.push_back(plate);
     }
 
@@ -191,12 +191,12 @@ void MainWindow::on_btn_recognize_clicked()
         recognized = classification.characterRecognition(plates, true);
     }
 
+    string output = "";
     for(string sample : recognized){
-        cout << sample << endl;
+        output.append(sample + "\n");
     }
 
     QMessageBox::information(
-        this,
-        tr("Licenseplates"),
-        tr("bla bla blubb \n bla bla") );
+        this, "Gefundene Kennzeichen",
+        tr(output.c_str()));
 }
