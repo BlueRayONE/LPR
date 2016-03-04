@@ -10,7 +10,7 @@
 #define PI 3.14159265
 #define WINDOW_SIZE 45
 
-#define DEV;
+//#define DEV;
 
 using namespace cv;
 using namespace std;
