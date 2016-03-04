@@ -13,7 +13,7 @@ Classification::Classification(){
 
 
 vector<string> Classification::characterRecognition(const vector<cv::Mat> plates, bool projection){
-    cv::Ptr<OCRTesseract> tesseract = OCRTesseract::create("/usr/local/share/tessdata", "deu2", NULL, 0, 10);
+    cv::Ptr<OCRTesseract> tesseract = OCRTesseract::create("D:/tesseract/tesseract-ocr/tessdata", "leu", NULL, 0, 10);
     vector<string> results;
 
     for(int k = 0; k < plates.size(); k++){

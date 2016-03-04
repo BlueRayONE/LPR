@@ -20,19 +20,21 @@ std::vector<cv::Mat> Segmentation_MSER::findChars()
 
 	cv::Mat colorM;
 	cvtColor(mser_m, colorM, CV_GRAY2RGB);
+	cv::Mat colorM_b = colorM.clone();
 
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box);
-		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 0, 255), 1);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 0, 255), 3);
 	}
 
 	bbox = Segmentation_MSER::discardOverlapping(bbox);
+	colorM = colorM_b.clone();
 
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box);
-		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 1);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 255), 3);
 	}
 
 	bbox = Segmentation_MSER::discardOutlier(bbox);
@@ -40,11 +42,12 @@ std::vector<cv::Mat> Segmentation_MSER::findChars()
 	std::sort(bbox.begin(), bbox.end(), [](cv::Rect r1, cv::Rect r2) { return r1.x < r2.x; });
 
 	std::vector<cv::Mat> res;
+	colorM = colorM_b.clone();
 
 	for (auto box : bbox)
 	{
 		cv::Rect relaxedBox = Segmentation_MSER::relaxRect(box);
-		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 0), 2);
+		cv::rectangle(colorM, relaxedBox, cv::Scalar(0, 255, 0), 3);
 		cv::Mat digit = resImg(box);
 		cv::Mat bordered;
 		cv::copyMakeBorder(digit, bordered, RELAX_PIXELS_VERT, RELAX_PIXELS_VERT, RELAX_PIXELS_HOR, RELAX_PIXELS_HOR, cv::BORDER_CONSTANT | cv::BORDER_ISOLATED, cv::Scalar(255));
