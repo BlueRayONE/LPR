@@ -14,22 +14,18 @@ licencePlateRecognition::~licencePlateRecognition()
 }
 
 
-
+/**
+Main function to find the plate.
+Computes 3 candidate images and merges them to 1 image. Then the PCA-algirthm is applyed.
+Finally the best region is chosen, cutted and returned.
+@Param image
+*/
 Mat licencePlateRecognition::getPlate(Mat src){
 
 	Mat smalImg = resizeImg(src);
 
-
-	Mat originalImg = src.clone();//smalImg.clone();
+	Mat originalImg = src.clone();
 	Mat imgX = smalImg.clone();
-
-	// h scale to 100
-	// bothat operator --------
-	// h sobel xgrad
-	// scaling zwischen min max 0 - 255
-	// smooth edges 
-	// h 5x5 median 
-	// convolve it with a3×30 identity mask
 
 	// c 2
 	cv::Mat c2;
@@ -43,19 +39,8 @@ Mat licencePlateRecognition::getPlate(Mat src){
 
 
 	// c 1
-
-
-	//cv::Sobel(imgX, gradX, 0, 1, 0);
-
 	cv::Mat c1;
 	cvtColor(imgX, c1, CV_BGR2GRAY);
-
-	//cv::morphologyEx(c1, c1, 0, );
-
-	//c1 = closeOperation3x3(c1);
-	//c1 = bothat(c1, 2, 8);
-	//dilate(c1, c1, Mat());
-	//erode(c1, c1, Mat());
 	c1 = computeSobelImgX(c1);
 	medianBlur(c1, c1, 5);
 	identidy3x30(c1, c1);
@@ -77,11 +62,8 @@ Mat licencePlateRecognition::getPlate(Mat src){
 	Mat dst;
 	cvtColor(imgX, dst, CV_BGR2GRAY);
 
-	//	cv::Mat energyMap = cv::Mat::zeros(sobelImg.size(), CV_32SC1);
-
+	// merging all 3 candidateimages
 	mergeResults(c1, c2, c3, dst);
-	//identidy3x30(dst, dst);
-
 
 	Mat dst2 = dst.clone();
 
@@ -90,26 +72,22 @@ Mat licencePlateRecognition::getPlate(Mat src){
 	medianBlur(dst2, dst2, 5);
 	dilate(dst2, dst2, Mat());
 
-
 	Mat trashh;
 	Mat trashhgray;
 	cvtColor(dst2, trashhgray, COLOR_BGR2GRAY);
-	threshold(trashhgray, trashh, 40, 255, CV_THRESH_BINARY);// | CV_THRESH_OTSU);
+	threshold(trashhgray, trashh, 40, 255, CV_THRESH_BINARY);
 	//P C A
 	vector<vector<Point>> goodContours;
 
-	goodContours = pca(dst2, 40, 150, 600, 500, 6000); //------------------------------ Werte für die PCA einstellen
-	// pca(dst2, 50, 150, 400, 500, 6000); 
-	//	 (dst2, 50, 100, 400, 100 besser 150, 6000); gute werte!!
+	goodContours = pca(dst2, 40, 150, 600, 500, 6000); //-----Values for PCA
 
 	cv::Mat plate = Mat::zeros(1,1, src.type());
 
+	//finding best candidate
 	if (goodContours.size() > 0){
 		//standart nummernschild 520mmx110mm verh.:~4.72
 		plate = findPlate(originalImg, dst2, goodContours);
 	}
-	//cv::Rect als ausgabe
-
 
 #ifdef DEV
 	cv::imshow("c3", c3);
@@ -134,7 +112,9 @@ Mat licencePlateRecognition::getPlate(Mat src){
 	return plate;
 }
 
-
+/**
+Resizes image
+*/
 Mat  licencePlateRecognition::resizeImg(cv::Mat src){
 	_scaleFactor = 1;
 	Mat smalImg = src.clone();
@@ -146,6 +126,11 @@ Mat  licencePlateRecognition::resizeImg(cv::Mat src){
 	return smalImg;
 }
 
+/**
+Applies mask3x30-function to all pixels of the image
+@Param image
+@Param output image
+*/
 void licencePlateRecognition::identidy3x30(cv::Mat src, cv::Mat dst){
 
 	for (int y = 1; y < src.rows - 1; y++){
@@ -156,6 +141,12 @@ void licencePlateRecognition::identidy3x30(cv::Mat src, cv::Mat dst){
 	}
 }
 
+/**
+Computes identity function with 3x30 mask
+@Param image
+@Param x-koordinate
+@Param y-kooridante
+*/
 int licencePlateRecognition::mask3x30(cv::Mat src, int x, int y){
 
 	int x0 = src.at<uchar>(y - 1, x + 15) + src.at<uchar>(y - 1, x + 14) + src.at<uchar>(y - 1, x + 13) + src.at<uchar>(y - 1, x + 12) + src.at<uchar>(y - 1, x + 11) + src.at<uchar>(y - 1, x + 10) + src.at<uchar>(y - 1, x + 9) + src.at<uchar>(y - 1, x + 8) + src.at<uchar>(y - 1, x + 7) + src.at<uchar>(y - 1, x + 6) + src.at<uchar>(y - 1, x + 5) + src.at<uchar>(y - 1, x + 4) + src.at<uchar>(y - 1, x + 3) + src.at<uchar>(y - 1, x + 2) + src.at<uchar>(y - 1, x + 1) + src.at<uchar>(y - 1, x) +
@@ -169,6 +160,11 @@ int licencePlateRecognition::mask3x30(cv::Mat src, int x, int y){
 	return xg;
 }
 
+
+/**
+Applies xGradient-function to all pixels of the image
+@Param image
+*/
 cv::Mat licencePlateRecognition::computeSobelImgX(cv::Mat src){
 	
 	cv::Mat greyImg;
@@ -206,6 +202,10 @@ cv::Mat licencePlateRecognition::computeSobelImgX(cv::Mat src){
 	return dst;
 }
 
+/** Methode berechnet Sobelmaske in x Richtung und gibt den Wert zurück
+@param greyImg Grauwertbild welches bearbeitet werden soll
+@param x-koordinate
+@param y-koordinate */
 int licencePlateRecognition::xGradient(cv::Mat greyImg, int x, int y){
 	int xg = greyImg.at<uchar>(y - 1, x - 1) +
 		2 * greyImg.at<uchar>(y, x - 1) +
@@ -216,63 +216,78 @@ int licencePlateRecognition::xGradient(cv::Mat greyImg, int x, int y){
 	return sqrt(xg * xg);
 }
 
+/**
+Applies dilate-function and erode-function with mask of size m x n.
+@Param image
+@Param m number of rows
+@Param n number of columns
+*/
+//cv::Mat licencePlateRecognition::bothat(cv::Mat src, int m, int n){
+//
+//	cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT,
+//				cv::Size(n ,m ),
+//				cv::Point(-1, -1));
+//
+//	cv::Mat hlp;
+//	cv::dilate(src, hlp, element);
+//	cv::Mat dst;
+//	cv::erode(hlp, dst, element);
+//
+//
+//
+//	for (int y = 0; y < src.rows; y++){
+//		for (int x = 0; x < src.cols; x++){
+//			//int a = src.at<uchar>(y, x);
+//			//dst.at<uchar>(y, x) = -10;
+//			//int b = dst.at<uchar>(y, x);
+//			if (dst.at<uchar>(y, x) > src.at<uchar>(y, x)){
+//				dst.at<uchar>(y, x) = dst.at<uchar>(y, x) - src.at<uchar>(y, x);
+//			}
+//			else
+//			{
+//				dst.at<uchar>(y, x) = src.at<uchar>(y, x) - dst.at<uchar>(y, x);
+//			}
+//		}
+//	}
+//
+//
+//	//// 0 - 255
+//	//double min, max;
+//	//cv::minMaxLoc(dst, &min, &max);
+//	//for (int y = 0; y < src.rows; y++){
+//	//	for (int x = 0; x < src.cols; x++){
+//	//		int i = dst.at<uchar>(y, x);
+//	//		dst.at<uchar>(y, x) = 255 * ((i - min) / (max - min));
+//	//	}
+//	//}
+//
+//	return dst;
+//}
 
-cv::Mat licencePlateRecognition::bothat(cv::Mat src, int m, int n){
-
-	cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT,
-				cv::Size(n ,m ),
-				cv::Point(-1, -1));
-
-	cv::Mat hlp;
-	cv::dilate(src, hlp, element);
-	cv::Mat dst;
-	cv::erode(hlp, dst, element);
-
-
-
-	for (int y = 0; y < src.rows; y++){
-		for (int x = 0; x < src.cols; x++){
-			//int a = src.at<uchar>(y, x);
-			//dst.at<uchar>(y, x) = -10;
-			//int b = dst.at<uchar>(y, x);
-			if (dst.at<uchar>(y, x) > src.at<uchar>(y, x)){
-				dst.at<uchar>(y, x) = dst.at<uchar>(y, x) - src.at<uchar>(y, x);
-			}
-			else
-			{
-				dst.at<uchar>(y, x) = src.at<uchar>(y, x) - dst.at<uchar>(y, x);
-			}
-		}
-	}
-
-
-	//// 0 - 255
-	//double min, max;
-	//cv::minMaxLoc(dst, &min, &max);
-	//for (int y = 0; y < src.rows; y++){
-	//	for (int x = 0; x < src.cols; x++){
-	//		int i = dst.at<uchar>(y, x);
-	//		dst.at<uchar>(y, x) = 255 * ((i - min) / (max - min));
-	//	}
-	//}
-
-	return dst;
-}
-
+/**
+Applies sameColor-function to all pixels of the image.
+@Param image
+*/
 cv::Mat licencePlateRecognition::computeRegions(cv::Mat src){
 
-	cv::Mat regions = cv::Mat::zeros(src.size(), src.type());//CV_32SC1);
+	cv::Mat regions = cv::Mat::zeros(src.size(), src.type());
 
 	for (int y = 0; y < src.rows; y++){
 		for (int x = 0; x < src.cols; x++){
 			int sum = sameColor(src, x, y);
 			regions.at<cv::Vec3b>(y, x)[2] = sum;
-			//regions.at<int>(y, x) = sum;
 		}
 	}
 	return regions;
 }
 
+/**
+Finds regions with greyish color.
+if all rgb-colorspaces are the same (+- smal threshold value return 255 else 0 
+@Param image
+@Param x-koordinate
+@Param y-koordinate
+*/
 int licencePlateRecognition::sameColor(cv::Mat src, int x, int y){
 
 	int b = src.at<cv::Vec3b>(y, x)[0];
@@ -291,6 +306,10 @@ int licencePlateRecognition::sameColor(cv::Mat src, int x, int y){
 	}
 }
 
+/**
+close operation with 3x3 neighbourhood
+@Param image
+*/
 cv::Mat licencePlateRecognition::closeOperation3x3(cv::Mat src){
 
 	cv::Mat hlp;
@@ -301,7 +320,13 @@ cv::Mat licencePlateRecognition::closeOperation3x3(cv::Mat src){
 	return dst;
 }
 
-
+/**
+merges the 3 candidate images into one image
+@Param c1 image
+@Param c2 image
+@Param c3 image
+@Param output image
+*/
 void licencePlateRecognition::mergeResults(cv::Mat src, cv::Mat c2, cv::Mat c3, cv::Mat dst){
 	cv::Mat candidate1 = cv::Mat::zeros(src.size(), CV_32SC1);
 
@@ -331,6 +356,9 @@ void licencePlateRecognition::mergeResults(cv::Mat src, cv::Mat c2, cv::Mat c3, 
 
 }
 
+/**
+draws the axis
+*/
 void drawAxis(Mat& img, Point p, Point q, Scalar colour, const float scale = 0.2)
 {
 	//! [visualization1]
@@ -405,8 +433,9 @@ double getOrientation(const vector<Point> &pts, Mat &img)
 	//double angle = 0;
 	return angle;
 }
-/**
 
+/**
+Function to find the main components of the image using the PCA-algorithm
 @Param src Image
 @Param graytrash
 @Param contourPointstrashhMin
@@ -472,7 +501,10 @@ vector<vector<Point>>  licencePlateRecognition::pca(cv::Mat src, int graytrash, 
 //bestes finden |__|
 //ausschneiden
 
-
+/** finds the region with the best scoreing, cuts it and returns cutted area 
+@Param original image
+@Param grey image
+@Param vector with points of shape */
 Mat licencePlateRecognition::findPlate(cv::Mat original, Mat src, vector<vector<Point>> contours){
 
 	vector<vector<double>> scoreing;
@@ -481,7 +513,7 @@ Mat licencePlateRecognition::findPlate(cv::Mat original, Mat src, vector<vector<
 		vector<double> tmp;
 		//getScore(contours[i]);
 
-		tmp.push_back(getEigenVector(contours[i])); // brauch ich nicht
+		tmp.push_back(getEigenVector(contours[i]));
 		vector<double> rect = getRectangleArroundShape(src, contours[i]);
 		//getFittingRectangleArroundShape(src, contours[i]);//---------------------------
 		tmp.push_back(rect[0]);
@@ -493,44 +525,45 @@ Mat licencePlateRecognition::findPlate(cv::Mat original, Mat src, vector<vector<
 	int best = getBestScore(scoreing);
 
 	Mat cutted = cutPlate(original, contours[best]);
-	//imshow("cutted", cutted);//---------------------------------------------
 
+	//--------------for warping-------------------------------
 	//cv::Point2f pc(cutted.cols / 2., cutted.rows / 2.);
 	//double angle = (360 / (2 * 3.14159265)) * scoreing[best].at(0);
 	//cv::Mat r = cv::getRotationMatrix2D(pc, angle, 1.0);
 
 	//cv::warpAffine(cutted, cutted, r, cutted.size());
-
-	//imshow("cutted warped", cutted); //---------------------------------------------
+	//---------------------------------------------------------
 	return cutted;
 }
 
-int licencePlateRecognition::getVariance(vector<Point> data){
+//int licencePlateRecognition::getVariance(vector<Point> data){
+//
+//	int sumX = 0;
+//	int sumY = 0;
+//	for (int i = 0; i < data.size(); i++){
+//		sumX += data[i].x; int test = data[i].x;
+//		sumY += data[i].y;
+//	}
+//	double meanX = sumX / data.size();
+//	double meanY = sumY / data.size();
+//
+//	double x = 0;
+//	double y = 0;
+//	for (int i = 0; i < data.size(); i++){
+//		x += abs(data[i].x - meanX);
+//		y += abs(data[i].y - meanY);
+//	}
+//	double varianceX = x / data.size();
+//	double varianceY = y / data.size();
+//
+//	//standart nummernschild 520mmx110mm ~4.72
+//	double ratio = x / y;
+//
+//	return 0;
+//}
 
-	int sumX = 0;
-	int sumY = 0;
-	for (int i = 0; i < data.size(); i++){
-		sumX += data[i].x; int test = data[i].x;
-		sumY += data[i].y;
-	}
-	double meanX = sumX / data.size();
-	double meanY = sumY / data.size();
-
-	double x = 0;
-	double y = 0;
-	for (int i = 0; i < data.size(); i++){
-		x += abs(data[i].x - meanX);
-		y += abs(data[i].y - meanY);
-	}
-	double varianceX = x / data.size();
-	double varianceY = y / data.size();
-
-	//standart nummernschild 520mmx110mm ~4.72
-	double ratio = x / y;
-
-	return 0;
-}
-
+/** returns pos with best score 
+@Param vector with scores */
 int licencePlateRecognition::getBestScore(std::vector<std::vector<double>> data){
 	
 
@@ -538,7 +571,7 @@ int licencePlateRecognition::getBestScore(std::vector<std::vector<double>> data)
 	int pos;
 
 	for (int i = 0; i < data.size(); i++){
-		double min0 = data[i].at(0); //winkel //brauchich nicht muss  aber dann zahlen anspassen bei nachfolgenden 2
+		double min0 = data[i].at(0); //winkel
 		double max1 = data[i].at(1); //seitenverhäldnis (4.7 perfekt)
 		double max2 = data[i].at(2); //abdeckung zum Rechteck 0-1 da %
 		
@@ -556,6 +589,9 @@ int licencePlateRecognition::getBestScore(std::vector<std::vector<double>> data)
 	return pos;
 }
 
+/** Draws rectangle arround the shape and returns its scores 
+@Param image
+@Param vector with points of shape */
 vector<double> licencePlateRecognition::getRectangleArroundShape(Mat src, vector<Point> data){
 
 
@@ -582,13 +618,13 @@ vector<double> licencePlateRecognition::getRectangleArroundShape(Mat src, vector
 	double areaOutsideOfPlate = areaRect - areaPlate;
 	double areaRatio = areaPlate / areaRect;
 
-	vector<Point> contour;
-	contour.push_back(Point(minX, minY)); //a
-	contour.push_back(Point(minX, maxY)); //c
-	contour.push_back(Point(maxX, maxY)); //d
-	contour.push_back(Point(maxX, minY)); //b
+	//vector<Point> contour;
+	//contour.push_back(Point(minX, minY));
+	//contour.push_back(Point(minX, maxY));
+	//contour.push_back(Point(maxX, maxY));
+	//contour.push_back(Point(maxX, minY));
 
-	double area = contourArea(contour);
+	//double area = contourArea(contour);
 
 	scores.push_back(sideRatio);
 	scores.push_back(areaRatio);
@@ -597,48 +633,40 @@ vector<double> licencePlateRecognition::getRectangleArroundShape(Mat src, vector
 }
 
 //´machtfast passendes rechteck um plate
-vector<double> licencePlateRecognition::getFittingRectangleArroundShape(Mat src, vector<Point> data){
+//vector<double> licencePlateRecognition::getFittingRectangleArroundShape(Mat src, vector<Point> data){
+//
+//	cv::Point minX = Point(INT_MAX, 0), minY = Point(0, INT_MAX), maxX = Point(INT_MIN, 0), maxY = Point(0, INT_MIN);
+//	for (int i = 0; i < data.size(); i++){
+//		if (data[i].x > maxX.x) maxX = data[i];
+//		if (data[i].y > maxY.y) maxY = data[i];
+//		if (data[i].x < minX.x) minX = data[i];
+//		if (data[i].y < minY.y) minY = data[i];
+//	}
+//
+//	line(src, minX, minY, Scalar(255, 255, 0), 1, CV_AA); //oben -  
+//	line(src, minY, maxX, Scalar(255, 255, 0), 1, CV_AA); //hinten |
+//	line(src, maxY, maxX, Scalar(255, 255, 0), 1, CV_AA); //unten _ 
+//	line(src, minX, maxY, Scalar(255, 255, 0), 1, CV_AA); //vorne | 
+//
+//	vector<double> scores;
+//	double areaPlate = contourArea(data);
+//
+//
+//	vector<Point> contour;
+//	contour.push_back(minX); //a
+//	contour.push_back(maxY); //c
+//	contour.push_back(maxX); //d
+//	contour.push_back(minY); //b
+//
+//	double area = contourArea(contour);
+//
+//	double areaOutsideOfPlate = abs(area - areaPlate);
+//
+//	return scores;
+//}
 
-	cv::Point minX = Point(INT_MAX, 0), minY = Point(0, INT_MAX), maxX = Point(INT_MIN, 0), maxY = Point(0, INT_MIN);
-	for (int i = 0; i < data.size(); i++){
-		if (data[i].x > maxX.x) maxX = data[i];
-		if (data[i].y > maxY.y) maxY = data[i];
-		if (data[i].x < minX.x) minX = data[i];
-		if (data[i].y < minY.y) minY = data[i];
-	}
-
-	line(src, minX, minY, Scalar(255, 255, 0), 1, CV_AA); //oben -     a, b
-	line(src, minY, maxX, Scalar(255, 255, 0), 1, CV_AA); //hinten |   b, d
-	line(src, maxY, maxX, Scalar(255, 255, 0), 1, CV_AA); //unten _    c, d
-	line(src, minX, maxY, Scalar(255, 255, 0), 1, CV_AA); //vorne |    a, c
-
-	// Calculate the area of each contour
-	vector<double> scores;
-	double areaPlate = contourArea(data);
-	//double areaRectX = maxX - minX;
-	//double areaRectY = maxY - minY;
-	//double sideRatio = areaRectX / areaRectY;
-	//double areaRect = areaRectX * areaRectY;
-	//double areaOutsideOfPlate = areaRect - areaPlate;
-	//double areaRatio = areaPlate / areaRect;
-
-
-	vector<Point> contour;
-	contour.push_back(minX); //a
-	contour.push_back(maxY); //c
-	contour.push_back(maxX); //d
-	contour.push_back(minY); //b
-
-	double area = contourArea(contour);
-
-	double areaOutsideOfPlate = abs(area - areaPlate);
-
-	//scores.push_back(sideRatio);
-	//scores.push_back(areaRatio);
-
-	return scores;
-}
-
+/** Computes eigenvector of given shape 
+@Param vector with points of shape*/
 double licencePlateRecognition::getEigenVector(vector<Point> data){
 	//! [pca]
 	//Construct a buffer used by the pca analysis
@@ -660,7 +688,7 @@ double licencePlateRecognition::getEigenVector(vector<Point> data){
 	//Store the eigenvalues and eigenvectors
 	vector<Point2d> eigen_vecs(2);
 	vector<double> eigen_val(2);
-	for (int i = 0; i < 1; ++i) // vorher war hier bis 2 aber gab error
+	for (int i = 0; i < 1; ++i) 
 	{
 		eigen_vecs[i] = Point2d(pca_analysis.eigenvectors.at<double>(i, 0),
 			pca_analysis.eigenvectors.at<double>(i, 1));
@@ -668,11 +696,12 @@ double licencePlateRecognition::getEigenVector(vector<Point> data){
 		eigen_val[i] = pca_analysis.eigenvalues.at<double>(0, i);
 	}
 
-	//double angle = atan2(eigen_vecs[0].y, eigen_vecs[0].x);
-
 	return atan2(eigen_vecs[0].y, eigen_vecs[0].x);
 }
 
+/** cuts the liceneplate out of the image 
+@Param image
+@Param vector with coordinates of licenceplate */
 Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
 
 	int minX = INT_MAX, minY = INT_MAX, maxX = INT_MIN, maxY = INT_MIN;
@@ -682,11 +711,6 @@ Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
 		if (data[i].x < minX) minX = data[i].x;
 		if (data[i].y < minY) minY = data[i].y;
 	}
-
-	//line(src, cv::Point(minX, minY), Point(minX, maxY), Scalar(255, 0, 0), 1, CV_AA); //oben -
-	//line(src, cv::Point(minX, maxY), Point(maxX, maxY), Scalar(255, 0, 0), 1, CV_AA); //hinten |
-	//line(src, cv::Point(maxX, minY), Point(maxX, maxY), Scalar(255, 0, 0), 1, CV_AA); //unten _
-	//line(src, cv::Point(maxX, minY), Point(minX, minY), Scalar(255, 0, 0), 1, CV_AA); //vorne |
 
 	int areaRectX = maxX - minX;
 	int areaRectY = maxY - minY;
@@ -703,8 +727,7 @@ Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
 	if ((areaRectX / _scaleFactor) + threshhold * 2 > src.cols){ c = src.cols; }
 	if ((areaRectY / _scaleFactor) + threshhold * 2 > src.rows){ d = src.rows; }
 
-	Mat croppedImage = src(Rect(a, b, c, d));//(minX / _scaleFactor) - threshhold, (minY / _scaleFactor) - threshhold,
-		//(areaRectX / _scaleFactor) + threshhold * 2, (areaRectY / _scaleFactor) + threshhold * 2));
+	Mat croppedImage = src(Rect(a, b, c, d));
 
 	return croppedImage;
 }
