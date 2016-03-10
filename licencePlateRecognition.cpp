@@ -361,7 +361,8 @@ double getOrientation(const vector<Point> &pts, Mat &img)
 }
 
 /**
-Function to find the main components of the image using the PCA-algorithm
+Function to find the main components of the image using the PCA-algorithm.
+code from: http://docs.opencv.org/3.1.0/d1/dee/tutorial_introduction_to_pca.html#gsc.tab=0
 @Param src Image
 @Param graytrash
 @Param contourPointstrashhMin
