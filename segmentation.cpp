@@ -485,7 +485,6 @@ int Segmentation::getHorizontalStart(const Mat& image){
         }
     }
     delete horizontalHistogram;
-    cout << maxValue << " at index " << indexAtMax << endl;
     return indexAtMax + 5;
 }
 
@@ -506,8 +505,6 @@ int Segmentation::getHorizontalEnd(const Mat& image){
 
         indexAtMax = i;
         if(currentValue == image.rows){
-            maxValue = currentValue;
-            //indexAtMax = i;
             return indexAtMax;
         }
     }
@@ -559,8 +556,9 @@ int Segmentation::getVerticalStart(const Mat& image){
     }
 
     delete verticalHistogram;
-    if(isInInterval(startIndex, pair<int,int>(0, image.rows-1)))
+    if(isInInterval(startIndex, pair<int,int>(0, image.rows-1))){
         return startIndex;
+    }
     else
         return 0;
 }
@@ -609,8 +607,9 @@ int Segmentation::getVerticalEnd(const Mat& image){
     }
 
     delete verticalHistogram;
-    if(isInInterval(endIndex, pair<int,int>(0, image.rows-1)))
+    if(isInInterval(endIndex, pair<int,int>(0, image.rows-1))){
         return endIndex;
+    }
     else
         return 0;
 }
@@ -631,7 +630,6 @@ int* Segmentation::computeVerticalHistogram(const Mat& image){
     int width = image.cols;
     int height = image.rows;
     Mat binaryImage = computeBinaryImage(image, WOLFJOLION, WINDOW_SIZE);
-    //imshow("wolfilein", binaryImage);
 
     int* histogram = new int[height];
     for(int i = 0; i < height; i++){
