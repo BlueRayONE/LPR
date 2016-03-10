@@ -45,19 +45,6 @@ Mat PCA_Localisation::getPlate(Mat src){
 	medianBlur(c1, c1, 5);
 	identidy3x30(c1, c1);
 
-
-	//Mat resized;
-	//double width = imgX.rows;
-	//double x = 100/ width;
-	//cv::resize(imgX, resized, Size(), x, x, 1);
-	//resized = imgX.clone();
-	//cv::Mat rc1;
-	//cvtColor(resized, rc1, CV_BGR2GRAY);
-	//rc1 = bothat(rc1, 2, 8);
-	//rc1 = computeSobelImgX(rc1);
-	//medianBlur(rc1, rc1, 5);
-	//identidy3x30(rc1, rc1);
-
 	//candidates
 	Mat dst;
 	cvtColor(imgX, dst, CV_BGR2GRAY);
@@ -83,7 +70,7 @@ Mat PCA_Localisation::getPlate(Mat src){
 
 	cv::Mat plate = Mat::zeros(1,1, src.type());
 
-	//finding best candidate
+	//find best candidate
 	if (goodContours.size() > 0){
 		//standart nummernschild 520mmx110mm verh.:~4.72
 		plate = findPlate(originalImg, dst2, goodContours);
@@ -135,7 +122,7 @@ void PCA_Localisation::identidy3x30(cv::Mat src, cv::Mat dst){
 
 	for (int y = 1; y < src.rows - 1; y++){
 		for (int x = 15; x < src.cols - 16; x++){
-			int sum = mask3x30(src, x, y); // +yGradient(greyImg, x, y);
+			int sum = mask3x30(src, x, y); 
 			dst.at<uchar>(y, x) = sum > 255 ? 255 : sum;
 		}
 	}
@@ -168,7 +155,6 @@ Applies xGradient-function to all pixels of the image
 cv::Mat PCA_Localisation::computeSobelImgX(cv::Mat src){
 	
 	cv::Mat greyImg;
-	//cv::cvtColor(src, greyImg, cv::COLOR_BGR2GRAY);
 	if (src.channels() == 3)
 	{
 		cvtColor(src, greyImg, CV_BGR2GRAY);
@@ -183,14 +169,6 @@ cv::Mat PCA_Localisation::computeSobelImgX(cv::Mat src){
 
 	double min, max;
 	cv::minMaxLoc(dst, &min, &max);
-
-	// 0 - 255
-	//for (int y = 0; y < src.rows; y++){
-	//	for (int x = 0; x < src.cols; x++){
-	//		int i = dst.at<uchar>(y, x);
-	//		dst.at<uchar>(y, x) = 255 * ((i - min) / (max - min));
-	//	}
-	//}
 
 	for (int y = 1; y < src.rows - 1; y++){
 		for (int x = 1; x < src.cols - 1; x++){
@@ -215,54 +193,6 @@ int PCA_Localisation::xGradient(cv::Mat greyImg, int x, int y){
 		greyImg.at<uchar>(y + 1, x + 1);
 	return sqrt(xg * xg);
 }
-
-/**
-Applies dilate-function and erode-function with mask of size m x n.
-@Param image
-@Param m number of rows
-@Param n number of columns
-*/
-//cv::Mat licencePlateRecognition::bothat(cv::Mat src, int m, int n){
-//
-//	cv::Mat element = cv::getStructuringElement(cv::MORPH_RECT,
-//				cv::Size(n ,m ),
-//				cv::Point(-1, -1));
-//
-//	cv::Mat hlp;
-//	cv::dilate(src, hlp, element);
-//	cv::Mat dst;
-//	cv::erode(hlp, dst, element);
-//
-//
-//
-//	for (int y = 0; y < src.rows; y++){
-//		for (int x = 0; x < src.cols; x++){
-//			//int a = src.at<uchar>(y, x);
-//			//dst.at<uchar>(y, x) = -10;
-//			//int b = dst.at<uchar>(y, x);
-//			if (dst.at<uchar>(y, x) > src.at<uchar>(y, x)){
-//				dst.at<uchar>(y, x) = dst.at<uchar>(y, x) - src.at<uchar>(y, x);
-//			}
-//			else
-//			{
-//				dst.at<uchar>(y, x) = src.at<uchar>(y, x) - dst.at<uchar>(y, x);
-//			}
-//		}
-//	}
-//
-//
-//	//// 0 - 255
-//	//double min, max;
-//	//cv::minMaxLoc(dst, &min, &max);
-//	//for (int y = 0; y < src.rows; y++){
-//	//	for (int x = 0; x < src.cols; x++){
-//	//		int i = dst.at<uchar>(y, x);
-//	//		dst.at<uchar>(y, x) = 255 * ((i - min) / (max - min));
-//	//	}
-//	//}
-//
-//	return dst;
-//}
 
 /**
 Applies sameColor-function to all pixels of the image.
@@ -364,10 +294,8 @@ void drawAxis(Mat& img, Point p, Point q, Scalar colour, const float scale = 0.2
 	//! [visualization1]
 	double angle;
 	double hypotenuse;
-	angle = atan2((double)p.y - q.y, (double)p.x - q.x); // angle in radians
+	angle = atan2((double)p.y - q.y, (double)p.x - q.x); 
 	hypotenuse = sqrt((double)(p.y - q.y) * (p.y - q.y) + (p.x - q.x) * (p.x - q.x));
-	//    double degrees = angle * 180 / CV_PI; // convert radians to degrees (0-180 range)
-	//    cout << "Degrees: " << abs(degrees - 180) << endl; // angle in 0-360 degrees range
 
 	// Here we lengthen the arrow by a factor of scale
 	q.x = (int)(p.x - scale * hypotenuse * cos(angle));
@@ -423,9 +351,7 @@ double getOrientation(const vector<Point> &pts, Mat &img)
 	// Draw the principal components
 	circle(img, cntr, 3, Scalar(255, 0, 255), 2);
 	Point p1 = cntr + 0.02 * Point(static_cast<int>(eigen_vecs[0].x * eigen_val[0]), static_cast<int>(eigen_vecs[0].y * eigen_val[0]));
-	//Point p2 = cntr - 0.02 * Point(static_cast<int>(eigen_vecs[1].x * eigen_val[1]), static_cast<int>(eigen_vecs[1].y * eigen_val[1]));
 	drawAxis(img, cntr, p1, Scalar(0, 255, 0), 1);
-	//drawAxis(img, cntr, p2, Scalar(255, 255, 0), 5);
 
 	double angle = atan2(eigen_vecs[0].y, eigen_vecs[0].x); // orientation in radians
 	//! [visualization]
@@ -435,7 +361,8 @@ double getOrientation(const vector<Point> &pts, Mat &img)
 }
 
 /**
-Function to find the main components of the image using the PCA-algorithm
+Function to find the main components of the image using the PCA-algorithm.
+code from: http://docs.opencv.org/3.1.0/d1/dee/tutorial_introduction_to_pca.html#gsc.tab=0
 @Param src Image
 @Param graytrash
 @Param contourPointstrashhMin
@@ -494,13 +421,6 @@ vector<vector<Point>>  PCA_Localisation::pca(cv::Mat src, int graytrash, int con
 	return goodContours;
 }
 
-//regionen finden
-//winkel berechnen
-//drehen
-//gleiche regionen wieder finden?!
-//bestes finden |__|
-//ausschneiden
-
 /** finds the region with the best scoreing, cuts it and returns cutted area 
 @Param original image
 @Param grey image
@@ -511,11 +431,9 @@ Mat PCA_Localisation::findPlate(cv::Mat original, Mat src, vector<vector<Point>>
 
 	for (int i = 0; i < contours.size(); i++){
 		vector<double> tmp;
-		//getScore(contours[i]);
 
 		tmp.push_back(getEigenVector(contours[i]));
 		vector<double> rect = getRectangleArroundShape(src, contours[i]);
-		//getFittingRectangleArroundShape(src, contours[i]);//---------------------------
 		tmp.push_back(rect[0]);
 		tmp.push_back(rect[1]);
 
@@ -535,32 +453,6 @@ Mat PCA_Localisation::findPlate(cv::Mat original, Mat src, vector<vector<Point>>
 	//---------------------------------------------------------
 	return cutted;
 }
-
-//int licencePlateRecognition::getVariance(vector<Point> data){
-//
-//	int sumX = 0;
-//	int sumY = 0;
-//	for (int i = 0; i < data.size(); i++){
-//		sumX += data[i].x; int test = data[i].x;
-//		sumY += data[i].y;
-//	}
-//	double meanX = sumX / data.size();
-//	double meanY = sumY / data.size();
-//
-//	double x = 0;
-//	double y = 0;
-//	for (int i = 0; i < data.size(); i++){
-//		x += abs(data[i].x - meanX);
-//		y += abs(data[i].y - meanY);
-//	}
-//	double varianceX = x / data.size();
-//	double varianceY = y / data.size();
-//
-//	//standart nummernschild 520mmx110mm ~4.72
-//	double ratio = x / y;
-//
-//	return 0;
-//}
 
 /** returns pos with best score 
 @Param vector with scores */
@@ -615,55 +507,13 @@ vector<double> PCA_Localisation::getRectangleArroundShape(Mat src, vector<Point>
 	double areaRectY = maxY - minY;
 	double sideRatio = areaRectX / areaRectY;
 	double areaRect = areaRectX * areaRectY;
-	double areaOutsideOfPlate = areaRect - areaPlate;
 	double areaRatio = areaPlate / areaRect;
-
-	//vector<Point> contour;
-	//contour.push_back(Point(minX, minY));
-	//contour.push_back(Point(minX, maxY));
-	//contour.push_back(Point(maxX, maxY));
-	//contour.push_back(Point(maxX, minY));
-
-	//double area = contourArea(contour);
 
 	scores.push_back(sideRatio);
 	scores.push_back(areaRatio);
 
 	return scores;
 }
-
-//´machtfast passendes rechteck um plate
-//vector<double> licencePlateRecognition::getFittingRectangleArroundShape(Mat src, vector<Point> data){
-//
-//	cv::Point minX = Point(INT_MAX, 0), minY = Point(0, INT_MAX), maxX = Point(INT_MIN, 0), maxY = Point(0, INT_MIN);
-//	for (int i = 0; i < data.size(); i++){
-//		if (data[i].x > maxX.x) maxX = data[i];
-//		if (data[i].y > maxY.y) maxY = data[i];
-//		if (data[i].x < minX.x) minX = data[i];
-//		if (data[i].y < minY.y) minY = data[i];
-//	}
-//
-//	line(src, minX, minY, Scalar(255, 255, 0), 1, CV_AA); //oben -  
-//	line(src, minY, maxX, Scalar(255, 255, 0), 1, CV_AA); //hinten |
-//	line(src, maxY, maxX, Scalar(255, 255, 0), 1, CV_AA); //unten _ 
-//	line(src, minX, maxY, Scalar(255, 255, 0), 1, CV_AA); //vorne | 
-//
-//	vector<double> scores;
-//	double areaPlate = contourArea(data);
-//
-//
-//	vector<Point> contour;
-//	contour.push_back(minX); //a
-//	contour.push_back(maxY); //c
-//	contour.push_back(maxX); //d
-//	contour.push_back(minY); //b
-//
-//	double area = contourArea(contour);
-//
-//	double areaOutsideOfPlate = abs(area - areaPlate);
-//
-//	return scores;
-//}
 
 /** Computes eigenvector of given shape 
 @Param vector with points of shape*/
