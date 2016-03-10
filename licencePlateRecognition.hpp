@@ -31,7 +31,6 @@ private:
 	int mask3x30(cv::Mat src, int x, int y); 
 
 	void mergeResults(cv::Mat c1, cv::Mat c2, cv::Mat c3, cv::Mat dst); 
-	
 
 	cv::Mat findPlate(cv::Mat original, cv::Mat src, std::vector<std::vector<cv::Point>> contours); 
 	int getBestScore(std::vector<std::vector<double>> data); 
@@ -43,9 +42,5 @@ private:
     std::vector<std::vector<cv::Point>>  pca(cv::Mat src, int graytresh, int contourPointsTreshhMin,
         int contourPointsTreshhMax, int contourAreaTreshhMin, int contourAreaTreshhMax); 
 	cv::Mat resizeImg(cv::Mat src); 
-
-	//cv::Mat bothat(cv::Mat src, int m, int n);
-	//int getVariance(std::vector<cv::Point> data);
-	//std::vector<double> getFittingRectangleArroundShape(cv::Mat src, std::vector<cv::Point> data);
 };
 
