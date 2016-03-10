@@ -4,14 +4,14 @@
 #include "ImageViewer.h"
 #include <iostream>
 
-class licencePlateRecognition
+class PCA_Localisation
 {
 public:
 	/* Konstruktor */
-	licencePlateRecognition();
+    PCA_Localisation();
 
 	/* Destruktor */
-	~licencePlateRecognition();
+    ~PCA_Localisation();
 
     cv::Mat getPlate(cv::Mat src);
 

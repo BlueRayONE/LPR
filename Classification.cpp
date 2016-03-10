@@ -1,4 +1,4 @@
-#include "classification.h"
+#include "Classification.h"
 #include "opencv2/text.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/highgui.hpp"
@@ -11,34 +11,42 @@ using namespace cv::text;
 Classification::Classification(){
 }
 
-
+/**
+ * @brief Recognizes the characters on the given plates.
+ * @param plates : images where a licence plate is on every picture
+ * @param projection : true for projection segmentation, false for MSER segmentation
+ * @return a vector of strings of the licence plates
+ */
 vector<string> Classification::characterRecognition(const vector<cv::Mat> plates, bool projection){
-    cv::Ptr<OCRTesseract> tesseract = OCRTesseract::create("/usr/local/share/tessdata", "deu2", NULL, 0, 10);
+    //define your path to tessdata folder where "europlate.traineddata" can be found
+    // last parameter "10" defines that the given matrix represent a single character (psmode 10)
+    cv::Ptr<OCRTesseract> tesseract = OCRTesseract::create("/usr/local/share/tessdata", "europlate", NULL, 0, 10);
     vector<string> results;
 
+    // for every found plate do a recognition
     for(int k = 0; k < plates.size(); k++){
         cv::Mat plate = plates.at(k);
         vector<cv::Mat> chars;
 
+        //crop the plate as preprocessing for the segmentation
         Segmentation segmentation(plate);
         segmentation.cropImage(plate);
 
         if(!projection){
             Segmentation_MSER seg_mser = Segmentation_MSER(segmentation.croppedImage);
+            //the single character matrices
             chars = seg_mser.findChars();
         } else {
             segmentation.findChars();
+            // the single character matrices
             chars = segmentation.chars;
         }
 
         bool numbers = false;
-        bool finished = false;
         string result = "";
         for(int i = 0; i < chars.size(); i++){
             cv::Mat character = chars.at(i);
 
-            //Mat binchar = segmentation.computeBinaryImage(character, WOLFJOLION, 30);
-            //cv::imshow(to_string(i), character);
             string output;
             vector<cv::Rect> boxes;
             vector<string> words;
@@ -51,21 +59,18 @@ vector<string> Classification::characterRecognition(const vector<cv::Mat> plates
                 numbers = true;
             }
 
+            // do some postprocessing where letters between numbers will be excluded from result
             if(numbers){
                 if(asciicode < 58)
                     result.append(output);
             } else {
                 result.append(output);
             }
-
-            for(int j = 0; j < confidences.size(); j++){
-                cout << confidences.size() << endl;
-                cout <<  "Char " + to_string(i) << " " << confidences.at(j) << " " << words.at(j) << endl;
-            }
         }
         results.push_back(result);
     }
 
+    // every string in "results" represents a single licence plate
     return results;
 }
 

@@ -1,9 +1,11 @@
 /**************************************************************
+ * The methods in this file where implemented by Wolf et al.
+ *
  * Binarization with several methods
  * (0) Niblacks method
  * (1) Sauvola & Co.
  *     ICDAR 1997, pp 147-152
- * (2) by myself - Christian Wolf
+ * (2) by Christian Wolf
  *     Research notebook 19.4.2001, page 129
  * (3) by myself - Christian Wolf
  *     20.4.2007

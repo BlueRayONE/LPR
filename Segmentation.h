@@ -28,7 +28,7 @@ public:
     cv::Mat computeBinaryImage(cv::Mat image, NiblackVersion version, int windowSize);
 
     cv::Mat originalImage;
-    std::string name;
+    //std::string name;
     cv::Mat croppedBinaryImage;
     cv::Mat croppedImage;
     std::vector<cv::Mat> chars; //LP hat max. 9 Zeichen: WAF-MU 3103 (+1 Puffer)
@@ -39,16 +39,17 @@ private:
     int getHorizontalStart(const cv::Mat& image);
     int getHorizontalEnd(const cv::Mat& image);
 
-    double computeAngle(const cv::Mat& image, bool horizontal);
+    double computeAngle(const cv::Mat& image);
+    double computeShearingAngle(const cv::Mat& blackened);
     cv::Mat rotate(const cv::Mat& toRotate);
     cv::Mat equalizeImage(const cv::Mat& image);
-    cv::Mat shear(const cv::Mat& image, double slope);
+    cv::Mat shear(const cv::Mat& blackened);
+    void blackenEuroline(cv::Mat& horizontalCropped);
 
     //utils
     int* reverseArray(int *arr, int start, int end);
     bool isInInterval(int value, std::pair<int,int> interval);
     void plotArray(int* array, int length, std::string filename, bool rm, bool view);
-    int slopeBetweenPoints(std::pair<int,int> p0, std::pair<int,int> p1);
 
 };
 

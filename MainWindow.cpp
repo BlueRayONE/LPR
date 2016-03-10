@@ -1,9 +1,9 @@
-#include "mainwindow.h"
+#include "MainWindow.h"
 #include "ui_mainwindow.h"
 #include "localisation.h"
-#include "segmentation.h"
-#include "licencePlateRecognition.hpp"
-#include "classification.h"
+#include "Segmentation.h"
+#include "PCA_Localisation.h"
+#include "Classification.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -92,7 +92,7 @@ void MainWindow::on_btn_localize_clicked()
     if(ui->radio_pca->isChecked())
     {
 
-		licencePlateRecognition a = licencePlateRecognition();
+		PCA_Localisation a = PCA_Localisation();
 		cv::Mat cloned = originalImage.clone();
         a.getPlate(cloned);
     }
@@ -177,7 +177,7 @@ void MainWindow::on_btn_recognize_clicked()
     }
 
     if(ui->radio_pca->isChecked()){
-        licencePlateRecognition a = licencePlateRecognition();
+        PCA_Localisation a = PCA_Localisation();
         cv::Mat cloned = originalImage.clone();
         cv::Mat plate = a.getPlate(cloned);
         plates.push_back(plate);

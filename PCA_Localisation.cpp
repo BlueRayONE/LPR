@@ -1,15 +1,15 @@
-#include "licencePlateRecognition.hpp"
+#include "PCA_Localisation.h"
 
 //#define DEV
 
 using namespace std;
 using namespace cv;
 
-licencePlateRecognition::licencePlateRecognition()
+PCA_Localisation::PCA_Localisation()
 {
 }
 
-licencePlateRecognition::~licencePlateRecognition()
+PCA_Localisation::~PCA_Localisation()
 {
 }
 
@@ -20,7 +20,7 @@ Computes 3 candidate images and merges them to 1 image. Then the PCA-algirthm is
 Finally the best region is chosen, cutted and returned.
 @Param image
 */
-Mat licencePlateRecognition::getPlate(Mat src){
+Mat PCA_Localisation::getPlate(Mat src){
 
 	Mat smalImg = resizeImg(src);
 
@@ -115,7 +115,7 @@ Mat licencePlateRecognition::getPlate(Mat src){
 /**
 Resizes image
 */
-Mat  licencePlateRecognition::resizeImg(cv::Mat src){
+Mat  PCA_Localisation::resizeImg(cv::Mat src){
 	_scaleFactor = 1;
 	Mat smalImg = src.clone();
 	if (src.cols > 800 || src.cols < 400)
@@ -131,7 +131,7 @@ Applies mask3x30-function to all pixels of the image
 @Param image
 @Param output image
 */
-void licencePlateRecognition::identidy3x30(cv::Mat src, cv::Mat dst){
+void PCA_Localisation::identidy3x30(cv::Mat src, cv::Mat dst){
 
 	for (int y = 1; y < src.rows - 1; y++){
 		for (int x = 15; x < src.cols - 16; x++){
@@ -147,7 +147,7 @@ Computes identity function with 3x30 mask
 @Param x-koordinate
 @Param y-kooridante
 */
-int licencePlateRecognition::mask3x30(cv::Mat src, int x, int y){
+int PCA_Localisation::mask3x30(cv::Mat src, int x, int y){
 
 	int x0 = src.at<uchar>(y - 1, x + 15) + src.at<uchar>(y - 1, x + 14) + src.at<uchar>(y - 1, x + 13) + src.at<uchar>(y - 1, x + 12) + src.at<uchar>(y - 1, x + 11) + src.at<uchar>(y - 1, x + 10) + src.at<uchar>(y - 1, x + 9) + src.at<uchar>(y - 1, x + 8) + src.at<uchar>(y - 1, x + 7) + src.at<uchar>(y - 1, x + 6) + src.at<uchar>(y - 1, x + 5) + src.at<uchar>(y - 1, x + 4) + src.at<uchar>(y - 1, x + 3) + src.at<uchar>(y - 1, x + 2) + src.at<uchar>(y - 1, x + 1) + src.at<uchar>(y - 1, x) +
 		src.at<uchar>(y - 1, x - 15) + src.at<uchar>(y - 1, x - 14) + src.at<uchar>(y - 1, x - 13) + src.at<uchar>(y - 1, x - 12) + src.at<uchar>(y - 1, x - 11) + src.at<uchar>(y - 1, x - 10) + src.at<uchar>(y - 1, x - 9) + src.at<uchar>(y - 1, x - 8) + src.at<uchar>(y - 1, x - 7) + src.at<uchar>(y - 1, x - 6) + src.at<uchar>(y - 1, x - 5) + src.at<uchar>(y - 1, x - 4) + src.at<uchar>(y - 1, x - 3) + src.at<uchar>(y - 1, x - 2) + src.at<uchar>(y - 1, x - 1);
@@ -165,7 +165,7 @@ int licencePlateRecognition::mask3x30(cv::Mat src, int x, int y){
 Applies xGradient-function to all pixels of the image
 @Param image
 */
-cv::Mat licencePlateRecognition::computeSobelImgX(cv::Mat src){
+cv::Mat PCA_Localisation::computeSobelImgX(cv::Mat src){
 	
 	cv::Mat greyImg;
 	//cv::cvtColor(src, greyImg, cv::COLOR_BGR2GRAY);
@@ -206,7 +206,7 @@ cv::Mat licencePlateRecognition::computeSobelImgX(cv::Mat src){
 @param greyImg Grauwertbild welches bearbeitet werden soll
 @param x-koordinate
 @param y-koordinate */
-int licencePlateRecognition::xGradient(cv::Mat greyImg, int x, int y){
+int PCA_Localisation::xGradient(cv::Mat greyImg, int x, int y){
 	int xg = greyImg.at<uchar>(y - 1, x - 1) +
 		2 * greyImg.at<uchar>(y, x - 1) +
 		greyImg.at<uchar>(y + 1, x - 1) -
@@ -268,7 +268,7 @@ Applies dilate-function and erode-function with mask of size m x n.
 Applies sameColor-function to all pixels of the image.
 @Param image
 */
-cv::Mat licencePlateRecognition::computeRegions(cv::Mat src){
+cv::Mat PCA_Localisation::computeRegions(cv::Mat src){
 
 	cv::Mat regions = cv::Mat::zeros(src.size(), src.type());
 
@@ -288,7 +288,7 @@ if all rgb-colorspaces are the same (+- smal threshold value return 255 else 0
 @Param x-koordinate
 @Param y-koordinate
 */
-int licencePlateRecognition::sameColor(cv::Mat src, int x, int y){
+int PCA_Localisation::sameColor(cv::Mat src, int x, int y){
 
 	int b = src.at<cv::Vec3b>(y, x)[0];
 	int g = src.at<cv::Vec3b>(y, x)[1];
@@ -310,7 +310,7 @@ int licencePlateRecognition::sameColor(cv::Mat src, int x, int y){
 close operation with 3x3 neighbourhood
 @Param image
 */
-cv::Mat licencePlateRecognition::closeOperation3x3(cv::Mat src){
+cv::Mat PCA_Localisation::closeOperation3x3(cv::Mat src){
 
 	cv::Mat hlp;
 	cv::dilate(src, hlp, cv::Mat());
@@ -327,7 +327,7 @@ merges the 3 candidate images into one image
 @Param c3 image
 @Param output image
 */
-void licencePlateRecognition::mergeResults(cv::Mat src, cv::Mat c2, cv::Mat c3, cv::Mat dst){
+void PCA_Localisation::mergeResults(cv::Mat src, cv::Mat c2, cv::Mat c3, cv::Mat dst){
 	cv::Mat candidate1 = cv::Mat::zeros(src.size(), CV_32SC1);
 
 	for (int y = 0; y < src.rows; y++){
@@ -443,7 +443,7 @@ Function to find the main components of the image using the PCA-algorithm
 @Param contourAreatrashhMin
 @Param contourAreatrashhMax
 */
-vector<vector<Point>>  licencePlateRecognition::pca(cv::Mat src, int graytrash, int contourPointstrashhMin,
+vector<vector<Point>>  PCA_Localisation::pca(cv::Mat src, int graytrash, int contourPointstrashhMin,
 	int contourPointstrashhMax, int contourAreatrashhMin, int contourAreatrashhMax){
 	// Convert image to grayscale
 	Mat gray;
@@ -505,7 +505,7 @@ vector<vector<Point>>  licencePlateRecognition::pca(cv::Mat src, int graytrash, 
 @Param original image
 @Param grey image
 @Param vector with points of shape */
-Mat licencePlateRecognition::findPlate(cv::Mat original, Mat src, vector<vector<Point>> contours){
+Mat PCA_Localisation::findPlate(cv::Mat original, Mat src, vector<vector<Point>> contours){
 
 	vector<vector<double>> scoreing;
 
@@ -564,7 +564,7 @@ Mat licencePlateRecognition::findPlate(cv::Mat original, Mat src, vector<vector<
 
 /** returns pos with best score 
 @Param vector with scores */
-int licencePlateRecognition::getBestScore(std::vector<std::vector<double>> data){
+int PCA_Localisation::getBestScore(std::vector<std::vector<double>> data){
 	
 
 	double maxScore = 0;
@@ -592,7 +592,7 @@ int licencePlateRecognition::getBestScore(std::vector<std::vector<double>> data)
 /** Draws rectangle arround the shape and returns its scores 
 @Param image
 @Param vector with points of shape */
-vector<double> licencePlateRecognition::getRectangleArroundShape(Mat src, vector<Point> data){
+vector<double> PCA_Localisation::getRectangleArroundShape(Mat src, vector<Point> data){
 
 
 	int minX = INT_MAX, minY = INT_MAX, maxX = INT_MIN, maxY = INT_MIN;
@@ -667,7 +667,7 @@ vector<double> licencePlateRecognition::getRectangleArroundShape(Mat src, vector
 
 /** Computes eigenvector of given shape 
 @Param vector with points of shape*/
-double licencePlateRecognition::getEigenVector(vector<Point> data){
+double PCA_Localisation::getEigenVector(vector<Point> data){
 	//! [pca]
 	//Construct a buffer used by the pca analysis
 	int sz = static_cast<int>(data.size());
@@ -702,7 +702,7 @@ double licencePlateRecognition::getEigenVector(vector<Point> data){
 /** cuts the liceneplate out of the image 
 @Param image
 @Param vector with coordinates of licenceplate */
-Mat licencePlateRecognition::cutPlate(Mat src, vector<Point> data){
+Mat PCA_Localisation::cutPlate(Mat src, vector<Point> data){
 
 	int minX = INT_MAX, minY = INT_MAX, maxX = INT_MIN, maxY = INT_MIN;
 	for (int i = 0; i < data.size(); i++){

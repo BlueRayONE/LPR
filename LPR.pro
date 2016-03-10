@@ -13,30 +13,31 @@ TEMPLATE = app
 
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
     ImageReader.cpp \
     QtOpencvCore.cpp \
     ImageViewer.cpp \
     Wavelet.cpp \
-    segmentation.cpp \
     binarizewolfjolion.cpp \
     MSER.cpp \
-    licencePlateRecognition.cpp \
     Segmentation_MSER.cpp \
-    classification.cpp
+    PCA_Localisation.cpp \
+    Segmentation.cpp \
+    MainWindow.cpp \
+    Classification.cpp
 
-HEADERS  += mainwindow.h \
+HEADERS  += \
     ImageReader.hpp \
     QtOpencvCore.hpp \
     ImageViewer.h \
     daub.h \
     Wavelet.h \
-    segmentation.h \
     binarizewolfjolion.h \
     MSER.h \
-    licencePlateRecognition.hpp \
     Segmentation_MSER.h \
-    classification.h
+    PCA_Localisation.h \
+    Segmentation.h \
+    MainWindow.h \
+    Classification.h
 
 FORMS    += mainwindow.ui
 

@@ -5,7 +5,7 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/highgui/highgui.hpp"
 
-#include "segmentation.h"
+#include "Segmentation.h"
 #include "Segmentation_MSER.h"
 
 
