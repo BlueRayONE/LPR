@@ -42,17 +42,17 @@ bool Segmentation::findChars()
     bool failed = false;
     int size = croppedImage.cols;
 
-    int* horizontalHistogram = computeHorizontalHistogram(croppedImage, WOLFJOLION);
+    int* colProjection = computeColProjection(croppedImage, WOLFJOLION);
 
     #ifdef DEV
-        plotArray(horizontalHistogram, size, "horizontalFULL.txt",false,true);
+        plotArray(colProjection, size, "horizontalFULL.txt",false,true);
     #endif
 
     for(int charNo=0; charNo<11; charNo++){
         if(rightPos >= size-10) break;
 
         leftPos = rightPos; // End of prev elem is start of new elem
-        tmpPos=findPeak(horizontalHistogram,size,leftPos,30); //Peak des nächsten Elements finden
+        tmpPos=findPeak(colProjection,size,leftPos,30); //Peak des nächsten Elements finden
 
         if(tmpPos == -1){ //Keinen Peak gefunden!!
             failed = true;
@@ -61,7 +61,7 @@ bool Segmentation::findChars()
         else if(tmpPos == -2) break;//Ende erreicht
 
 
-        rightPos=findValley(horizontalHistogram,size,tmpPos,3); //Ende des nächsten Elements finden
+        rightPos=findValley(colProjection,size,tmpPos,3); //Ende des nächsten Elements finden
 
         if(rightPos == -1){ //Kein Valley gefunden!!
             failed = true;
@@ -74,7 +74,7 @@ bool Segmentation::findChars()
         //Badge muss innerhalb der ersten 4 Iterationen gefunden worden sein => charNo <= 3
         if(badgeFound || charNo > 3 || !isBadge(croppedImage(Rect(leftPos, 0, rightPos-leftPos, croppedImage.rows)))){ //Es handelt sich nicht um Bereich der Plaketten
             line(croppedImage, cv::Point(rightPos, 0), Point(rightPos, croppedImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Buchstabens einzeichnen
-            tmpPos = findChange(horizontalHistogram,leftPos+2,rightPos);
+            tmpPos = findChange(colProjection,leftPos+2,rightPos);
             if((tmpPos-leftPos) > 30 && !badgeFound && charNo <= 3){ //ist Plakette bei Binärisierung gefiltert worden? Dann gibts ne große weiße Lücke!
                 badgeFound = true;
                 line(croppedImage, cv::Point(tmpPos-5, 0), Point(tmpPos-5, croppedImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende des Leerraums einzeichnen
@@ -88,7 +88,7 @@ bool Segmentation::findChars()
             badgeFound = true;
             chars.push_back(cv::Mat(1,1,CV_8U));
             line(croppedImage, cv::Point((leftPos+((rightPos-leftPos)/2)), 0), cv::Point((leftPos+((rightPos-leftPos)/2)), croppedImage.rows), Scalar(0, 0, 255), 1, CV_AA); // Badge mittig markieren
-            rightPos=findValley(horizontalHistogram,size,tmpPos,3) + 2;
+            rightPos=findValley(colProjection,size,tmpPos,3) + 2;
             line(croppedImage, cv::Point(rightPos, 0), Point(rightPos, croppedImage.rows), Scalar(255, 0, 0), 1, CV_AA); // Ende der Plakette einzeichnen
         }
 
@@ -110,22 +110,22 @@ bool Segmentation::isBadge(const cv::Mat& imageSegment)
 
 bool Segmentation::isBadgeDetail(const cv::Mat& imageSegment, bool reverse)
 {
-    int* verticalHistogram = computeVerticalHistogram(imageSegment); //Bild von oben nach unten    
+    int* rowProjection = computeRowProjection(imageSegment); //Bild von oben nach unten
 
-    if(reverse) verticalHistogram = reverseArray(verticalHistogram, 0,imageSegment.rows-1); //jetzt von unten nach oben
+    if(reverse) rowProjection = reverseArray(rowProjection, 0,imageSegment.rows-1); //jetzt von unten nach oben
     #ifdef DEV
-        plotArray(verticalHistogram, imageSegment.rows, "badgeProj.txt",false,true);
+        plotArray(rowProjection, imageSegment.rows, "badgeProj.txt",false,true);
     #endif
 
-    int point1 = findPeak(verticalHistogram,imageSegment.rows-1,0,3);
+    int point1 = findPeak(rowProjection,imageSegment.rows-1,0,3);
     if(point1 >= 0) //evtl -1 od. -2 wenn nix gefunden wurde
-        point1 = findValley(verticalHistogram,imageSegment.rows-1,point1,2);
+        point1 = findValley(rowProjection,imageSegment.rows-1,point1,2);
 
     if(!isInInterval(point1,pair<int,int>(1,imageSegment.rows*0.5)))
         return false;
 
     int point2 = point1;
-    while(verticalHistogram[point2] == verticalHistogram[point2+1])
+    while(rowProjection[point2] == rowProjection[point2+1])
         point2++;
 
     if((point2-point1 > imageSegment.rows*0.085) && (point1 < imageSegment.rows*0.6)) // Abstand hat gewisse Größe und ist beginnt auch in unterer Bildhälfte
@@ -134,14 +134,14 @@ bool Segmentation::isBadgeDetail(const cv::Mat& imageSegment, bool reverse)
         return false;
 }
 
-int Segmentation::findChange(int *horizontalHistogram, int start, int maxPos)
+int Segmentation::findChange(int* colProjection, int start, int maxPos)
 {
     //thresholdValley = threshold value, which should indicate beginning of a valley
     int result = -1;
     int i = start;
 
 
-    while((horizontalHistogram[i+1] == horizontalHistogram[i]) && (i<maxPos)) //Abweichung finden
+    while((colProjection[i+1] == colProjection[i]) && (i<maxPos)) //Abweichung finden
         i++;
 
     if(i > start+5)
@@ -150,15 +150,15 @@ int Segmentation::findChange(int *horizontalHistogram, int start, int maxPos)
     return result;
 }
 
-int Segmentation::findValley(int *horizontalHistogram, int size, int position, int thresholdValley)
+int Segmentation::findValley(int* colProjection, int size, int position, int thresholdValley)
 {
     //thresholdValley = threshold value, which should indicate beginning of a valley
     int result = -1;
     int i;
 
     for(i=position; i < size; i++){ //Punkt finden der Schwellwert unterschreitet
-        if(horizontalHistogram[i] <= thresholdValley){
-            while(horizontalHistogram[i+1] < horizontalHistogram[i] && i<size) i++; //lok. Minimum finden
+        if(colProjection[i] <= thresholdValley){
+            while(colProjection[i+1] < colProjection[i] && i<size) i++; //lok. Minimum finden
             result = i;
             break;
         }
@@ -169,19 +169,19 @@ int Segmentation::findValley(int *horizontalHistogram, int size, int position, i
     return result;
 }
 
-int Segmentation::findPeak(int *histogram, int size, int position, int thresholdPeak)
+int Segmentation::findPeak(int *projection, int size, int position, int thresholdPeak)
 {
     // thresholdPeak = hreshold value, which should indicate beginning of a peak
     int result = -1;
     int i;
 
     #ifdef DEV
-        plotArray(histogram, size, "findPeak.txt",false,false);
+        plotArray(projection, size, "findPeak.txt",false,false);
     #endif
 
     for(i=position; i < size; i++){ //Punkt finden der Schwellwert überschreitet
-        if(histogram[i] >= thresholdPeak){ //lok. Maximum finden
-            while(histogram[i+1] >= histogram[i] && i<size) i++;
+        if(projection[i] >= thresholdPeak){ //lok. Maximum finden
+            while(projection[i+1] >= projection[i] && i<size) i++;
             result = i;
             break;
         }
@@ -399,8 +399,8 @@ void Segmentation::blackenEuroline(Mat& horizontalCropped){
 }
 
 /**
- * @brief Central cropping method. Crops the image with a licence plate on it to an ideal image ready for segmentation.
- * @param image
+ * @brief Central cropping method which coordinates the single preprocessing methods. Crops the image with a licence plate on it to an ideal image ready for segmentation.
+ * @param image : an image in which the licence plate is nearly in the middle
  * @return a fully cropped image (rotated, sheared, vertical and horizontal cropped)
  */
 Mat Segmentation::cropImage(const Mat& image){
@@ -532,11 +532,11 @@ void Segmentation::plotArray(int* array, int length, string filename, bool rm, b
  * @return the index of the col which represents the left border.
  */
 int Segmentation::getHorizontalStart(const Mat& image){
-    int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
+    int* colProjection = computeColProjection(image, WOLFJOLION);
     int width = image.cols;
     int middleRow = width/2;
     #ifdef DEV
-        plotArray(horizontalHistogram, image.cols, "ColProjection.txt",false,false);
+        plotArray(colProjection, image.cols, "ColProjection.txt",false,false);
     #endif
 
     int maxValue = 0;
@@ -544,14 +544,14 @@ int Segmentation::getHorizontalStart(const Mat& image){
     // start from the middle col and search till the first col
     // find index with maximum value
     for(int i = middleRow; i >= 0; i--){
-        int currentValue = horizontalHistogram[i];
+        int currentValue = colProjection[i];
 
         if(currentValue > maxValue){
             maxValue = currentValue;
             indexAtMax = i;
         }
     }
-    delete horizontalHistogram;
+    delete colProjection;
     return indexAtMax + 5;
 }
 
@@ -561,25 +561,25 @@ int Segmentation::getHorizontalStart(const Mat& image){
  * @return the index of the col which represents the right border
  */
 int Segmentation::getHorizontalEnd(const Mat& image){
-    int* horizontalHistogram = computeHorizontalHistogram(image, WOLFJOLION);
+    int* colProjection = computeColProjection(image, WOLFJOLION);
     int width = image.cols;
     int middleRow = width/2;
     #ifdef DEV
-        plotArray(horizontalHistogram, image.cols, "ColProjection.txt",false,false);
+        plotArray(colProjection, image.cols, "ColProjection.txt",false,false);
     #endif
 
     int indexAtMax = 0;
     //start from the middle col and search till the end col
     // find index with maximum value
     for(int i = middleRow; i < width; i++){
-        int currentValue = horizontalHistogram[i];
+        int currentValue = colProjection[i];
 
         indexAtMax = i;
         if(currentValue == image.rows){
             return indexAtMax;
         }
     }
-    delete horizontalHistogram;
+    delete colProjection;
     return indexAtMax;
 }
 
@@ -589,10 +589,10 @@ int Segmentation::getHorizontalEnd(const Mat& image){
  * @return the index of the row which represents the top border.
  */
 int Segmentation::getVerticalStart(const Mat& image){
-    int* verticalHistogram = computeVerticalHistogram(image);
+    int* rowProjection = computeRowProjection(image);
     //very important: don't mix cols with rows -> bad results
     #ifdef DEV
-        plotArray(verticalHistogram, image.rows, "RowProjection.txt",false,true);
+        plotArray(rowProjection, image.rows, "RowProjection.txt",false,true);
     #endif
 
     int height = image.rows;
@@ -603,23 +603,23 @@ int Segmentation::getVerticalStart(const Mat& image){
     int threshold = image.cols / 7;
 
     // start from the middle row and search till the first row
-    int maximum = verticalHistogram[startIndex];
+    int maximum = rowProjection[startIndex];
     bool found = false;
     int i = 1;
     while(!found){
-        int currentValue = verticalHistogram[startIndex - i];
+        int currentValue = rowProjection[startIndex - i];
 
         if(currentValue < maximum){
             int diff = maximum - currentValue;
             if(diff >= threshold){
                 found = true;
                 int index = startIndex - i;
-                int currentMin = verticalHistogram[index];
-                int neighborMin = verticalHistogram[index - 1];
+                int currentMin = rowProjection[index];
+                int neighborMin = rowProjection[index - 1];
                 while(neighborMin < currentMin){
                     index = index - 1;
-                    currentMin = verticalHistogram[index];
-                    neighborMin = verticalHistogram[index - 1];
+                    currentMin = rowProjection[index];
+                    neighborMin = rowProjection[index - 1];
                 }
                 startIndex = index;
             }
@@ -631,7 +631,7 @@ int Segmentation::getVerticalStart(const Mat& image){
         }
     }
 
-    delete verticalHistogram;
+    delete rowProjection;
     if(isInInterval(startIndex, pair<int,int>(0, image.rows-1))){
         return startIndex;
     }
@@ -645,10 +645,10 @@ int Segmentation::getVerticalStart(const Mat& image){
  * @return the index of the row that represents the bottom border
  */
 int Segmentation::getVerticalEnd(const Mat& image){
-    int* verticalHistogram = computeVerticalHistogram(image);
+    int* rowProjection = computeRowProjection(image);
     //very important: don't mix cols with rows -> bad results
     #ifdef DEV
-        plotArray(verticalHistogram, image.rows, "RowProjection.txt",false,false);
+        plotArray(rowProjections, image.rows, "RowProjection.txt",false,false);
     #endif
 
     int height = image.rows;
@@ -659,23 +659,23 @@ int Segmentation::getVerticalEnd(const Mat& image){
     int threshold = image.cols / 7;
 
     // start from the middle row and search till the first row
-    int maximum = verticalHistogram[endIndex];
+    int maximum = rowProjection[endIndex];
     bool found = false;
     int i = 1;
     while(!found){
-        int currentValue = verticalHistogram[endIndex + i];
+        int currentValue = rowProjection[endIndex + i];
 
         if(currentValue < maximum){
             int diff = maximum - currentValue;
             if(diff >= threshold){
                 found = true;
                 int index = endIndex + i;
-                int currentMin = verticalHistogram[index];
-                int neighborMin = verticalHistogram[index + 1];
+                int currentMin = rowProjection[index];
+                int neighborMin = rowProjection[index + 1];
                 while(neighborMin < currentMin){
                     index = index + 1;
-                    currentMin = verticalHistogram[index];
-                    neighborMin = verticalHistogram[index + 1];
+                    currentMin = rowProjection[index];
+                    neighborMin = rowProjection[index + 1];
                 }
                 endIndex = index;
             }
@@ -687,7 +687,7 @@ int Segmentation::getVerticalEnd(const Mat& image){
         }
     }
 
-    delete verticalHistogram;
+    delete rowProjection;
     if(isInInterval(endIndex, pair<int,int>(0, image.rows-1))){
         return endIndex;
     }
@@ -701,16 +701,16 @@ int Segmentation::getVerticalEnd(const Mat& image){
  * @param version : the binarization method which will be used.
  * @return an array that contains all the y-values for each col. Must be FREED!
  */
-int* Segmentation::computeHorizontalHistogram(const Mat& image, NiblackVersion version){
+int* Segmentation::computeColProjection(const Mat& image, NiblackVersion version){
     int width = image.cols;
     int height = image.rows;
     Mat binaryImage = computeBinaryImage(image, version, WINDOW_SIZE);
 
-    int* histogram = new int[width];
+    int* colProjection = new int[width];
     for(int i = 0; i < width; i++){
-       histogram[i] = height - countNonZero(binaryImage.col(i));
+       colProjection[i] = height - countNonZero(binaryImage.col(i));
     }
-    return histogram;
+    return colProjection;
 }
 
 /**
@@ -718,16 +718,16 @@ int* Segmentation::computeHorizontalHistogram(const Mat& image, NiblackVersion v
  * @param image
  * @return an array that contains all the y-values for each row. Must be FREED!
  */
-int* Segmentation::computeVerticalHistogram(const Mat& image){
+int* Segmentation::computeRowProjection(const Mat& image){
     int width = image.cols;
     int height = image.rows;
     Mat binaryImage = computeBinaryImage(image, WOLFJOLION, WINDOW_SIZE);
 
-    int* histogram = new int[height];
+    int* rowProjection = new int[height];
     for(int i = 0; i < height; i++){
-       histogram[i] = width - countNonZero(binaryImage.row(i));
+       rowProjection[i] = width - countNonZero(binaryImage.row(i));
     }
-    return histogram;
+    return rowProjection;
 }
 
 /* Function to reverse an array*/

@@ -68,13 +68,13 @@ unix {
 
     QMAKE_CXXFLAGS += -std=c++11 -Wall -pedantic -Wno-unknown-pragmas
 
+    # set your opencv 3 path (opencv_contrib is required)
+    # maybe you have to set your path to tesseract when it is not /usr/local/include
     INCLUDEPATH += /opt/opencv3/include/ \
-                   /usr/local/include
+                   #/usr/local/include
 
     LIBS += -L/opt/opencv3/lib/ \
-            -L/usr/local/lib \
-            -L/usr/lib \
-            -ltesseract \
+            #-L/usr/local/lib \
             -lopencv_core \
             -lopencv_highgui \
             -lopencv_imgproc \
